@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree of Life</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="author" content="Michael Weston Reeves">
+</head>
+<body>
+    <!-- <svg id="svg" width="100" height="100" viewBox="-30 -40 350 350">
+        <circle r="10" cx="0" cy="0" fill="pink"></circle>
+        <line x1="0" y1="-100" x2="100" y2="0" stroke-width="3" stroke="#555"></line>
+    </svg> -->
+    <canvas id="mainCanvas"></canvas>
+    <div class="side">
+        <button id="reset">Reset</button>
+        <div id="controls">
+            <button title="back" class="small1" id="backward"></button>
+            <button title="play"class="small1" id="play"></button>
+            <button title="step forward" class="small1" id="forward"></button>
+        </div>
+        <label for="simSpeed" title="Sets the speed of growth." class="varTitle">Growth Speed: <span id="simSpeedVar"></span></label>
+        <input type="range" id="simSpeed" class="slider" min="1" max="100" value="1" step="1">
+        <label for="maxProduce" title="Sets the maximum amount of branches that a node can produce." class="varTitle">Maximum Produce: <span id="maxProduceVar"></span></label>
+        <input type="range" id="maxProduce" class="slider" min="1" max="10" value="2" step="1">
+        <label for="minDistance" title="Sets the minimum distance that two nodes can be from each other." class="varTitle">Minimum Distance: <span id="minDistanceVar"></span></label>
+        <input type="range" id="minDistance" class="slider" min="1" max="56" value="20" step="1">
+        <label for="maxAge" title="Sets the age at which a node dies in seconds." class="varTitle">Maximum Age: <span id="maxAgeVar"></span></label>
+        <input type="range" id="maxAge" class="slider" min="0" max="100" value="8" step="0.1">
+        <label for="mutation" title="Sets the severity of mutation in color." class="varTitle">Mutation: <span id="mutationVar"></span></label>
+        <input type="range" id="mutation" class="slider" min="0" max="1" value="0.04" step="0.001">
+        <label class="varTitle">Num of Points: <span id="pointsVar">0</span></label>
+        <br>
+        <br>
+        <span id="hidden">[:</span>
+    </div>
+    <script src="/code/main.js" type="module"></script>
+</body>
+</html>

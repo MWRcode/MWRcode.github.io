@@ -1,0 +1,148 @@
+body {
+  height: 100vh;
+  width: 100vw;
+  position: absolute;
+  margin: 0;
+  background-color: #111;
+  overscroll-behavior: none;
+  overflow-x: hidden;
+}
+
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+button {
+  border-style: solid;
+  border-radius: 4px;
+  background-color: white;
+}
+
+button:hover {
+  background-color: #EEEEEE;
+  cursor: pointer;
+}
+
+button:active {
+  background-color: #DDDDDD;
+}
+
+.side {
+  height: 100vh;
+  width: max(25vw, 25vh);
+  position: fixed;
+  top: 0px;
+  right: 0px;
+  overflow-x: hidden;
+  background-color: rgba(0, 0, 0, 0.06);
+  transition: right 0.3s ease;
+  padding-top: 40px;
+}
+
+.side:hover {
+  right: 0px;
+}
+
+#reset {
+  font-size: 300%;
+  width: 80%;
+  padding: 4px;
+  margin: 10%;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.small1 {
+  background-repeat: no-repeat;
+  background-size: auto;
+  background-size: cover;
+  width: 25%;
+  aspect-ratio: 1/1;
+}
+
+#play {
+  background-image: url("/assets/play.svg");
+}
+
+#forward {
+  background-image: url("/assets/forward.svg");
+}
+
+#backward {
+  background-image: url("/assets/forward.svg");
+  transform: rotateY(180deg);
+}
+
+#controls {
+  width: 80%;
+  padding-left: 10%;
+  padding-right: 10%;
+  display: flex;
+  flex: auto;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80%;
+  height: 8px;
+  margin: 10%;
+  margin-bottom: 30px;
+  margin-top: 10px;
+  border-radius: 4px;
+  outline: none;
+  background-color: #DDD;
+  transition: background 0.3s;
+}
+
+.slider:hover {
+  background-color: #CCC;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  position: relative;
+  bottom: 6px;
+  background: #007bff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #007bff 0%, #007bff var(--value), #0000 var(--value), #0000 100%);
+}
+
+.varTitle {
+  margin-left: 10%;
+  font-size: 180%;
+  color: white;
+}
+
+#hidden {
+  color: #0000;
+  background-color: #0000;
+}
+
+div {
+  margin: 0;
+  padding: 0;
+}
+
+svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
