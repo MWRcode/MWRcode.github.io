@@ -6,11 +6,6 @@ body {
   background-color: #111;
   overscroll-behavior: none;
   overflow-x: hidden;
-  overflow-y: scroll;
-}
-
-.side::-webkit-scrollbar {
-  display: none;
 }
 
 canvas {
@@ -44,6 +39,7 @@ button:active {
   background-color: rgba(0, 0, 0, 0.06);
   transition: right 0.3s ease;
   padding-top: 40px;
+  overflow-y: auto;
 }
 
 .side:hover {
