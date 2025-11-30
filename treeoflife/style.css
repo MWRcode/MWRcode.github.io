@@ -5,10 +5,11 @@ body {
   margin: 0;
   background-color: #111;
   overscroll-behavior: none;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 
-body::-webkit-scrollbar {
+.side::-webkit-scrollbar {
   display: none;
 }
 
@@ -43,6 +44,7 @@ button:active {
   background-color: rgba(0, 0, 0, 0.06);
   transition: right 0.3s ease;
   padding-top: 40px;
+  overflow: hidden;
 }
 
 .side:hover {
