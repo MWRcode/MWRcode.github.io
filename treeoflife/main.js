@@ -163,14 +163,14 @@ function reset() {
 function play() {
   const button = document.getElementById("play");
   isUpdating = true;
-  button.style.backgroundImage = "url(/assets/pause.svg)";
+  button.style.backgroundImage = "url(assets-unzipped/pause.svg)";
   button.onclick = pause;
 }
 
 function pause() {
   const button = document.getElementById("play");
   isUpdating = false;
-  button.style.backgroundImage = "url(/assets/play.svg)";
+  button.style.backgroundImage = "url(assets-unzipped/play.svg)";
   button.onclick = play;
 }
 
