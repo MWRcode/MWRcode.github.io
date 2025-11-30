@@ -1,6 +1,6 @@
-import { math } from './math.js';
-import { spatialGrid } from './spatialGrid.js';
-import { renderManager } from './renderManager.js';
+import { math } from './code/math.js';
+import { spatialGrid } from './code/spatialGrid.js';
+import { renderManager } from './code/renderManager.js';
 
 const canvas = document.getElementById("mainCanvas");
 const ctx = canvas.getContext("2d");
@@ -163,14 +163,14 @@ function reset() {
 function play() {
   const button = document.getElementById("play");
   isUpdating = true;
-  button.style.backgroundImage = "url(assets-unzipped/pause.svg)";
+  button.style.backgroundImage = "url(assets/pause.svg)";
   button.onclick = pause;
 }
 
 function pause() {
   const button = document.getElementById("play");
   isUpdating = false;
-  button.style.backgroundImage = "url(assets-unzipped/play.svg)";
+  button.style.backgroundImage = "url(assets/play.svg)";
   button.onclick = play;
 }
 
