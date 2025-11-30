@@ -5,8 +5,6 @@ import { renderManager } from './code/renderManager.js';
 const canvas = document.getElementById("mainCanvas");
 const ctx = canvas.getContext("2d");
 
-// const svg = document.getElementById("svg");
-
 canvas.style.background = "#222";
 
 canvas.width = window.innerWidth;
@@ -286,7 +284,7 @@ function update(deltaTime) {
       nodes.delete(node);
     }
   }
-
+  document.getElementById("pointsVar").innerText = circleCount;
 }
 
 let lastTime = 0;
@@ -295,14 +293,6 @@ function loop(timeStamp) {
   lastTime = timeStamp;
   
   renderer.render(canvas, ctx, camera);
-
-  console.log(circleCount);
-  document.getElementById("pointsVar").innerText = circleCount;
-
-  // svg.setAttribute("width", window.innerWidth);
-  // svg.setAttribute("height", window.innerHeight);
-  // const view = `${camera.x - ((canvas.width / 2) / camera.zoom) + (canvas.width / 2)} ${camera.y - ((canvas.height / 2) / camera.zoom) + (canvas.height / 2)} ${window.innerWidth / camera.zoom} ${window.innerHeight / camera.zoom}`;
-  // svg.setAttribute("viewBox", view);
 
   if (isUpdating) {
     for (let i = 0; i < simSpeed; i++) {
