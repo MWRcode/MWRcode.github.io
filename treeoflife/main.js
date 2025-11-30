@@ -242,15 +242,12 @@ class Node {
       const xpos = this.xpos + math.randrange(spawnRange[0], spawnRange[1]);
       const ypos = this.ypos + math.randrange(spawnRange[2], spawnRange[3]);
 
-      let finish = true;
-
-      grid.findNear([xpos, ypos], [minDistance, minDistance]).forEach((node) => {
-        if (math.getsqrdist(xpos, ypos, node.position[0], node.position[1]) < minDistance ** 2) {
-          finish = false;
-        }
+      const minDistanceSqr = minDistance * minDistance;
+      const nearCells = grid.isNear([xpos, ypos], [minDistance, minDistance], (position) => {
+        return math.getsqrdist(xpos, ypos, position[0], position[1]) < minDistanceSqr;
       });
 
-      if (finish) {
+      if (nearCells.length == 0) {
         const color = [
           math.clamp(this.preColor[0] + math.randrange(-mutation / 2, mutation / 2), 0, 1),
           math.clamp(this.preColor[1] + math.randrange(-mutation / 2, mutation / 2), 0, 1)
@@ -284,6 +281,7 @@ function update(deltaTime) {
       nodes.delete(node);
     }
   }
+
   document.getElementById("pointsVar").innerText = circleCount;
 }
 

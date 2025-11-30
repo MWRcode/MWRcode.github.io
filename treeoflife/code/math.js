@@ -6,10 +6,10 @@ export const math = {
         return x * (b - a) + a;
     },
     getdist: function(xpos1, ypos1, xpos2, ypos2) {
-        return Math.sqrt((xpos1 - xpos2)**2 + (ypos1 - ypos2)**2);
+        return Math.sqrt((xpos1 - xpos2)*(xpos1 - xpos2) + (ypos1 - ypos2)*(ypos1 - ypos2));
     },
     getsqrdist: function(xpos1, ypos1, xpos2, ypos2) {
-        return (xpos1 - xpos2)**2 + (ypos1 - ypos2)**2;
+        return (xpos1 - xpos2)*(xpos1 - xpos2) + (ypos1 - ypos2)*(ypos1 - ypos2); // faster to do subtractiuon twice than create a variable
     },
     clamp: function(x, a, b) {
         return Math.min(Math.max(x, a), b);
