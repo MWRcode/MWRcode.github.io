@@ -5,7 +5,11 @@ body {
   margin: 0;
   background-color: #111;
   overscroll-behavior: none;
-  overflow-x: hidden;
+  overflow: hidden;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 canvas {
