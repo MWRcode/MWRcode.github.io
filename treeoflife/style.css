@@ -63,15 +63,15 @@ button:active {
 }
 
 #play {
-  background-image: url("assets-unzipped/play.svg");
+  background-image: url("assets/play.svg");
 }
 
 #forward {
-  background-image: url("assets-unzipped/forward.svg");
+  background-image: url("assets/forward.svg");
 }
 
 #backward {
-  background-image: url("assets-unzipped/forward.svg");
+  background-image: url("assets/forward.svg");
   transform: rotateY(180deg);
 }
 
