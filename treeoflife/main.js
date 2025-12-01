@@ -236,7 +236,7 @@ class Node {
       if (!isNearCircle) {
         const color = [
           math.wrap(this.color[0] + math.randrange(-mutation / 2, mutation / 2), 0, 1),
-          math.clamp(this.color[1] + math.randrange(-mutation / 2, mutation / 2), 0, 1)
+          math.pingpong(this.color[1] + math.randrange(-mutation / 2, mutation / 2), 0, 1)
         ];
         createNode(xpos, ypos, this.xpos, this.ypos, color);
         this.produced++;
