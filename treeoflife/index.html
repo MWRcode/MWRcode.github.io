@@ -10,19 +10,19 @@
 <body>
     <canvas id="mainCanvas"></canvas>
     <div class="side">
-        <button id="reset">Reset</button>
+        <button title="Resets the simulation while keeping the settings the same." id="reset">Reset</button>
         <div id="controls">
-            <button title="back" class="small1" id="backward"></button>
-            <button title="play"class="small1" id="play"></button>
-            <button title="step forward" class="small1" id="forward"></button>
+            <button title="Back (same as reset)" class="small1" id="backward"></button>
+            <button title="Play"class="small1" id="play"></button>
+            <button title="Step forward one second" class="small1" id="forward"></button>
         </div>
-        <label for="simSpeed" title="Sets the speed of growth." class="varTitle">Growth Speed: <span id="simSpeedVar"></span></label>
-        <input type="range" id="simSpeed" class="slider" min="1" max="100" value="1" step="1">
+        <label for="simSpeed" title="Sets the speed of the simulation." class="varTitle">Simulation Speed: <span id="simSpeedVar"></span></label>
+        <input type="range" id="simSpeed" class="slider" min="1" max="20" value="1" step="1">
         <label for="maxProduce" title="Sets the maximum amount of branches that a node can produce." class="varTitle">Maximum Produce: <span id="maxProduceVar"></span></label>
         <input type="range" id="maxProduce" class="slider" min="1" max="10" value="2" step="1">
         <label for="minDistance" title="Sets the minimum distance that two nodes can be from each other." class="varTitle">Minimum Distance: <span id="minDistanceVar"></span></label>
         <input type="range" id="minDistance" class="slider" min="1" max="56" value="20" step="1">
-        <label for="maxAge" title="Sets the age at which a node dies in seconds." class="varTitle">Maximum Age: <span id="maxAgeVar"></span></label>
+        <label for="maxAge" title="Sets the age at which a node dies in seconds." class="varTitle">Maximum Age: <span id="maxAgeVar"></span> seconds</label>
         <input type="range" id="maxAge" class="slider" min="0" max="100" value="8" step="0.1">
         <label for="mutation" title="Sets the severity of mutation in color." class="varTitle">Mutation: <span id="mutationVar"></span></label>
         <input type="range" id="mutation" class="slider" min="0" max="1" value="0.04" step="0.001">

@@ -24,15 +24,17 @@ let mouseStartPos = { x: null, y: null };
 
 let isUpdating = false;
 
-// Variables
+// Simulation variables
 let maxAge = 8;
 let simSpeed = 1;
 let minDistance = 20;
 let maxProduce = 2;
-let spawnRange = [-40, 40, -40, -8]; //[-40, 40, -40, -8]
+let spawnRange = [-40, 40, -40, -8];
 let mutation = 0.04;
 
+// Interactions
 document.getElementById("reset").onclick = reset;
+document.getElementById("backward").onclick = reset;
 document.getElementById("play").onclick = play;
 document.getElementById("forward").onclick = () => { update(1000); };
 
@@ -101,6 +103,7 @@ canvas.addEventListener('wheel', (event) => {
   camera.zoom = Math.max(camera.zoom, 0.0001);
 });
 
+// Helper functions
 function veiwTransform(xpos, ypos) {
   return [(xpos - camera.x - canvas.width / 2) * camera.zoom + canvas.width / 2, (ypos - camera.y - canvas.height / 2) * camera.zoom + canvas.height / 2];
 }
@@ -110,22 +113,6 @@ function createNode(xpos, ypos, pxpos, pypos, color) {
   const node = new Node(xpos, ypos, color);
   nodes.add(node);
   renderer.addNode(xpos, ypos, pxpos, pypos, hslToHex(color[0] * 360, 100, color[1] * 100), 5);
-
-  // const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  // circ.setAttribute("r", 5);
-  // circ.setAttribute("cx", xpos);
-  // circ.setAttribute("cy", ypos);
-  // circ.setAttribute("fill", hslToHex(color[0] * 360, 100, color[1] * 100));
-  // svg.append(circ);
-
-  // const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  // line.setAttribute("x1", xpos);
-  // line.setAttribute("y1", ypos);
-  // line.setAttribute("x2", pxpos);
-  // line.setAttribute("y2", pypos);
-  // line.setAttribute("stroke", "#555");
-  // line.setAttribute("stroke-width", 2);
-  // svg.prepend(line);
 
   circleCount++;
 }
@@ -163,6 +150,7 @@ function play() {
   isUpdating = true;
   button.style.backgroundImage = "url(assets/pause.svg)";
   button.onclick = pause;
+  button.title = "Pause";
 }
 
 function pause() {
@@ -170,8 +158,10 @@ function pause() {
   isUpdating = false;
   button.style.backgroundImage = "url(assets/play.svg)";
   button.onclick = play;
+  button.title = "Play";
 }
 
+// Sliders
 function setupSliders() {
   const sliderVars = [
     "simSpeed",
@@ -218,19 +208,15 @@ document.getElementById("mutation").addEventListener("input", event => {
   event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
 });
 
+// Simulation code
 class Node {
   constructor(xpos, ypos, color) {
     this.xpos = xpos;
     this.ypos = ypos;
-    // this.prevXpos = prevXpos;
-    // this.prevYpos = prevYpos;
-    // this.veiwPos = veiwTransform(this.xpos, this.ypos);
-    // this.veiwPrevPos = veiwTransform(this.prevXpos, this.prevYpos);
     this.age = 0;
     this.produced = 0;
     this.dead = false;
-    this.preColor = color;
-    // this.rgbColor = hslToHex(this.preColor[0] * 360, 100, this.preColor[1] * 100);
+    this.color = color;
     this.timer = math.randrange(-1000, 0);
   }
   update(deltaTime) {
@@ -243,14 +229,14 @@ class Node {
       const ypos = this.ypos + math.randrange(spawnRange[2], spawnRange[3]);
 
       const minDistanceSqr = minDistance * minDistance;
-      const nearCells = grid.isNear([xpos, ypos], [minDistance, minDistance], (position) => {
+      const isNearCircle = grid.isNear([xpos, ypos], [minDistance, minDistance], (position) => {
         return math.getsqrdist(xpos, ypos, position[0], position[1]) < minDistanceSqr;
       });
 
-      if (nearCells.length == 0) {
+      if (!isNearCircle) {
         const color = [
-          math.clamp(this.preColor[0] + math.randrange(-mutation / 2, mutation / 2), 0, 1),
-          math.clamp(this.preColor[1] + math.randrange(-mutation / 2, mutation / 2), 0, 1)
+          math.wrap(this.color[0] + math.randrange(-mutation / 2, mutation / 2), 0, 1),
+          math.clamp(this.color[1] + math.randrange(-mutation / 2, mutation / 2), 0, 1)
         ];
         createNode(xpos, ypos, this.xpos, this.ypos, color);
         this.produced++;
@@ -264,17 +250,11 @@ class Node {
       this.dead = true;
     }
   }
-  // drawSpawnRange() {
-  //   ctx.fillStyle = "#EEEE11";
-  //   ctx.fillRect(x + spawnRange[0], y + spawnRange[2], spawnRange[1] - spawnRange[0], spawnRange[3] - spawnRange[2]);
-  // }
 }
 
 reset();
 
 function update(deltaTime) {
-  // Update nodes
-
   for (const node of nodes) {
     node.update(deltaTime);
     if (node.dead) {

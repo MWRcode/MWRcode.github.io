@@ -9,7 +9,11 @@ export const math = {
         return Math.sqrt((xpos1 - xpos2)*(xpos1 - xpos2) + (ypos1 - ypos2)*(ypos1 - ypos2));
     },
     getsqrdist: function(xpos1, ypos1, xpos2, ypos2) {
-        return (xpos1 - xpos2)*(xpos1 - xpos2) + (ypos1 - ypos2)*(ypos1 - ypos2); // faster to do subtractiuon twice than create a variable
+        return (xpos1 - xpos2)*(xpos1 - xpos2) + (ypos1 - ypos2)*(ypos1 - ypos2); // faster to do subtraction twice than create a variable
+    },
+    wrap: function(n, min, max) {
+        const range = max - min;
+        return ((((n - min) % range) + range) % range) + min;
     },
     clamp: function(x, a, b) {
         return Math.min(Math.max(x, a), b);
