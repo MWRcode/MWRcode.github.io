@@ -26,7 +26,7 @@ let isUpdating = false;
 
 // Simulation variables
 let maxAge = 8;
-let simSpeed = 1;
+let simSpeed = 3;
 let minDistance = 20;
 let maxProduce = 2;
 let spawnRange = [-40, 40, -40, -8];
