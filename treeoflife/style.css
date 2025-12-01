@@ -151,3 +151,14 @@ svg {
   top: 0;
   left: 0;
 }
+
+#image {
+  background-image: url("favicon1.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  width: 128px;
+  height: 128px;
+  mask-image: url('#svgMask');
+  mask-repeat: no-repeat;
+  mask-size: cover;
+}
