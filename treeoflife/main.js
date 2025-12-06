@@ -36,7 +36,7 @@ let mutation = 0.04;
 document.getElementById("reset").onclick = reset;
 document.getElementById("backward").onclick = reset;
 document.getElementById("play").onclick = play;
-document.getElementById("forward").onclick = () => { update(1000); };
+document.getElementById("forward").onclick = () => { update(1000) };
 
 window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
@@ -139,6 +139,7 @@ function reset() {
   renderer.removeAll();
 
   circleCount = 0;
+  document.getElementById("pointsVar").innerText = circleCount;
 
   createNode(canvas.width / 2, canvas.height / 2, canvas.width / 2, canvas.height / 2, [Math.random(), Math.random()]);
   camera = { x: 0, y: 0, zoom: 1 };
@@ -267,9 +268,9 @@ function update(deltaTime) {
 
 let lastTime = 0;
 function loop(timeStamp) {
-  let deltaTime = Math.min(timeStamp - lastTime, 100); // limit deltatime to 1/10 of a second to avoid lag
+  let deltaTime = Math.min(timeStamp - lastTime, 100); // limit deltatime to 100 to avoid lag
   lastTime = timeStamp;
-  
+
   renderer.render(canvas, ctx, camera);
 
   if (isUpdating) {
