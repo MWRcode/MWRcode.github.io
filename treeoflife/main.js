@@ -18,6 +18,8 @@ let nodes = new Set();
 
 let circleCount = 0;
 
+const circleCountDisplay = document.getElementById("pointsVar");
+
 let camera = { x: 0, y: 0, zoom: 1 };
 
 let mouseStartPos = { x: null, y: null };
@@ -139,7 +141,7 @@ function reset() {
   renderer.removeAll();
 
   circleCount = 0;
-  document.getElementById("pointsVar").innerText = circleCount;
+  circleCountDisplay.innerText = 1;
 
   createNode(canvas.width / 2, canvas.height / 2, canvas.width / 2, canvas.height / 2, [Math.random(), Math.random()]);
   camera = { x: 0, y: 0, zoom: 1 };
@@ -263,7 +265,7 @@ function update(deltaTime) {
     }
   }
 
-  document.getElementById("pointsVar").innerText = circleCount;
+  circleCountDisplay.innerText = circleCount;
 }
 
 let lastTime = 0;
