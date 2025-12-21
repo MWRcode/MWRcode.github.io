@@ -9,7 +9,7 @@ export const math = {
         return Math.sqrt((xpos1 - xpos2)*(xpos1 - xpos2) + (ypos1 - ypos2)*(ypos1 - ypos2));
     },
     getsqrdist: function(xpos1, ypos1, xpos2, ypos2) {
-        return (xpos1 - xpos2)*(xpos1 - xpos2) + (ypos1 - ypos2)*(ypos1 - ypos2); // faster to do subtraction twice than create a variable
+        return (xpos1 - xpos2)*(xpos1 - xpos2) + (ypos1 - ypos2)*(ypos1 - ypos2);
     },
     wrap: function(n, min, max) {
         const range = max - min;
@@ -17,14 +17,11 @@ export const math = {
     },
     pingpong: function(n, min, max) {
         const range = max - min;
-        const t = (n) % (2 * range);
+        const t = n % (2 * range);
         return t < range ? min + t : max - (t - range);
     },
     clamp: function(x, a, b) {
         return Math.min(Math.max(x, a), b);
-    },
-    sat: function(x) {
-        return Math.min(Math.max(x, 0.0), 1.0);
     },
     map: function(x, a, b) {
         return (x - a) / (b - a);
