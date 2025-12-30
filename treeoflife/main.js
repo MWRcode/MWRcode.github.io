@@ -101,6 +101,7 @@ window.addEventListener('mouseleave', (event) => {
 });
 
 canvas.addEventListener('wheel', (event) => {
+  event.preventDefault();
   camera.zoom *= 1 + event.deltaY * -0.001;
   camera.zoom = Math.max(camera.zoom, 0.0001);
 });
