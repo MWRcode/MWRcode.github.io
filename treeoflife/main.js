@@ -102,7 +102,16 @@ window.addEventListener('mouseleave', (event) => {
 
 canvas.addEventListener('wheel', (event) => {
   event.preventDefault();
-  camera.zoom *= 1 + event.deltaY * -0.001;
+
+  const abs = Math.abs(event.deltaY);
+  const norm = event.deltaY / abs;
+
+  if (abs > 50) {
+    camera.zoom *= 1 + event.deltaY * -0.002;
+  } else if (abs > 0) {
+    camera.zoom *= 1 + event.deltaY * -0.02;
+  }
+
   camera.zoom = Math.max(camera.zoom, 0.0001);
 });
 
