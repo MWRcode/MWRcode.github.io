@@ -75,16 +75,17 @@ export const renderManager = class renderManager {
   }
   render(canvas, ctx, camera) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    for (let x = camera.x - ((canvas.width / 2) / camera.zoom) + (canvas.width / 2); x < camera.x - ((canvas.width / 2) / camera.zoom) + (canvas.width / 2) + (canvas.width / camera.zoom) + this.imageSize[0]; x += this.imageSize[0]) {
-      for (let y = camera.y - ((canvas.height / 2) / camera.zoom) + (canvas.height / 2); y < camera.y - ((canvas.height / 2) / camera.zoom) + (canvas.height / 2) + (canvas.height / camera.zoom) + this.imageSize[1]; y += this.imageSize[1]) {
+
+    const stepsizefac = 1 / Math.min(1, camera.zoom * 1000);
+
+    for (let x = camera.x - ((canvas.width / 2) / camera.zoom) + (canvas.width / 2); x < camera.x - ((canvas.width / 2) / camera.zoom) + (canvas.width / 2) + (canvas.width / camera.zoom) + this.imageSize[0]; x += this.imageSize[0] * stepsizefac) {
+      for (let y = camera.y - ((canvas.height / 2) / camera.zoom) + (canvas.height / 2); y < camera.y - ((canvas.height / 2) / camera.zoom) + (canvas.height / 2) + (canvas.height / camera.zoom) + this.imageSize[1]; y += this.imageSize[1] * stepsizefac) {
         const index = this._getImageIndex([x, y]);
         const key = this._key(index[0], index[1]);
 
         if (key in this.images) {
           const linesCanvas = this.images[key][0].canvas;
           const circlesCanvas = this.images[key][1].canvas;
-
           ctx.drawImage(linesCanvas, 0, 0, this.imageSize[0], this.imageSize[1], (index[0] - camera.x - canvas.width / 2) * camera.zoom + canvas.width / 2, (index[1] - camera.y - canvas.height / 2) * camera.zoom + canvas.height / 2, this.imageSize[0] * camera.zoom, this.imageSize[1] * camera.zoom);
           ctx.drawImage(circlesCanvas, 0, 0, this.imageSize[0], this.imageSize[1], (index[0] - camera.x - canvas.width / 2) * camera.zoom + canvas.width / 2, (index[1] - camera.y - canvas.height / 2) * camera.zoom + canvas.height / 2, this.imageSize[0] * camera.zoom, this.imageSize[1] * camera.zoom);
         }

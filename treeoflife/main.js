@@ -112,7 +112,7 @@ canvas.addEventListener('wheel', (event) => {
     camera.zoom *= 1 + event.deltaY * -0.02;
   }
 
-  camera.zoom = Math.max(camera.zoom, 0.0001);
+  camera.zoom = math.clamp(camera.zoom, 0.001, 1000);
 });
 
 // Helper functions
@@ -153,7 +153,7 @@ function reset() {
   circleCount = 0;
   circleCountDisplay.innerText = 1;
 
-  createNode(canvas.width / 2, canvas.height / 2, canvas.width / 2, canvas.height / 2, [Math.random(), Math.random()]);
+  createNode(canvas.width / 2, canvas.height / 2, canvas.width / 2, canvas.height / 2, [Math.random(), math.randrange(0.4, 0.8)]);
   camera = { x: 0, y: 0, zoom: 1 };
   pause();
 }
