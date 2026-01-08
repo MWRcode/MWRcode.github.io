@@ -275,7 +275,7 @@ function update(deltaTime) {
     }
   }
 
-  circleCountDisplay.innerText = circleCount;
+  circleCountDisplay.innerText = circleCount.toLocaleString('en-US');
 }
 
 let lastTime = 0;
