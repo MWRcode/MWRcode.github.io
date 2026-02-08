@@ -307,7 +307,7 @@ class Source {
       for (const offset of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         offsetpos = [offset[0] + pos[0], offset[1] + pos[1]];
 
-        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) | isBlock(offsetpos)) continue;
+        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || isBlock(offsetpos)) continue;
 
         offsetedPositons.push(offsetpos);
 
@@ -321,7 +321,7 @@ class Source {
 
         const offsetid = getID(offsetpos[0], offsetpos[1]);
         const combinedID = new Set([...id, ...offsetid]);
-        if (![...offsetid].some(n => id.has(n)) & offsetid != undefined & isArrayEqual(getColor(offsetpos[0], offsetpos[1]), color) & 2 ** ((hue + 36) / 36) <= combinedID.size) {
+        if (![...offsetid].some(n => id.has(n)) && offsetid != undefined && isArrayEqual(getColor(offsetpos[0], offsetpos[1]), color) && 2 ** ((hue + 36) / 36) <= combinedID.size) {
           hue += 36;
           if (hue == 144) { hue += 36 }
           color = darkenColor(hsl2rgb(hue, 100, 50));
@@ -530,7 +530,11 @@ function updateMovement(deltaTime) {
 
 // world gen
 for (let i = 0; i < 100; i++) {
-  createSource([Math.round(Math.random() * width), Math.round(Math.random() * height)], 0)
+  let hue = 0;
+  while (Math.random() < 0.2) {
+    hue += 36;
+  }
+  createSource([Math.round(Math.random() * width), Math.round(Math.random() * height)], hue);
 }
 
 // Simulation
