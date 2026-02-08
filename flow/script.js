@@ -1,7 +1,7 @@
 // Variables
 const [width, height] = [100, 100];
 
-const pixelSize = 64;
+const pixelSize = 32;
 
 let sources = [];
 
@@ -315,13 +315,12 @@ class Source {
           setColor(offsetpos[0], offsetpos[1], color);
           setID(offsetpos[0], offsetpos[1], id);
           setHue(offsetpos[0], offsetpos[1], hue);
-          setVelocity(pos[0], pos[1], offset);
           return true;
         }
 
         const offsetid = getID(offsetpos[0], offsetpos[1]);
         const combinedID = new Set([...id, ...offsetid]);
-        if (![...offsetid].some(n => id.has(n)) && offsetid != undefined && isArrayEqual(getColor(offsetpos[0], offsetpos[1]), color) && 2 ** ((hue + 36) / 36) <= combinedID.size) {
+        if (![...offsetid].some(n => id.has(n)) && offsetid != undefined && isArrayEqual(getColor(offsetpos[0], offsetpos[1]), color) && getRequiredIDsFormHue(hue + 36) <= combinedID.size) {
           hue += 36;
           if (hue == 144) { hue += 36 }
           color = darkenColor(hsl2rgb(hue, 100, 50));
@@ -329,7 +328,6 @@ class Source {
           setColor(offsetpos[0], offsetpos[1], color);
           setID(offsetpos[0], offsetpos[1], new Set([...id, ...offsetid]));
           setHue(offsetpos[0], offsetpos[1], hue);
-          setVelocity(pos[0], pos[1], offset);
           return true;
         }
       }
@@ -374,17 +372,6 @@ function getColor(x, y) {
   return pixel.color;
 }
 
-function getVelocity(x, y) {
-  const pixel = pixels.get(`${wrap(x, 0, width)},${wrap(y, 0, height)}`);
-  if (pixel === undefined) {
-    return [0, 0];
-  }
-  if (pixel.velocity === undefined) {
-    return [0, 0];
-  }
-  return pixel.velocity;
-}
-
 function getID(x, y) {
   const pixel = pixels.get(`${wrap(x, 0, width)},${wrap(y, 0, height)}`);
   if (pixel === undefined) {
@@ -405,48 +392,39 @@ function getHue(x, y) {
 }
 
 function setColor(x, y, color) {
+  let rects = [];
+  
+  if (color == "free") {
+    color = [64, 64, 64, 255];
+  }
+  
+  // create draw buffer
   if (isArrayEqual(color, [64, 64, 64, 255])) {
     if (isBlock([x, y - 1])) {
-      ctx.beginPath();
-
-      ctx.fillStyle = `rgba(64, 64, 64, 1)`;
-      ctx.rect(wrap(x * pixelSize, 0, canvas.width), wrap(y * pixelSize + (pixelSize * 1 / 2), 0, canvas.height), pixelSize, (pixelSize * 1 / 2));
-      ctx.fill();
-
-      ctx.beginPath();
-
-      ctx.fillStyle = `rgba(96, 96, 96, 1)`;
-      ctx.rect(wrap(x * pixelSize, 0, canvas.width), wrap(y * pixelSize, 0, canvas.height), pixelSize, (pixelSize * 1 / 2));
-      ctx.fill();
+      rects.push([0, 0, 1, 0.5, [96, 96, 96]]);
+      rects.push([0, 0.5, 1, 0.5, [64, 64, 64]]);
     } else {
-      ctx.beginPath();
-
-      ctx.fillStyle = `rgba(64, 64, 64, 1)`;
-      ctx.rect(wrap(x * pixelSize, 0, canvas.width), wrap(y * pixelSize, 0, canvas.height), pixelSize, pixelSize);
-      ctx.fill();
+      rects.push([0, 0, 1, 1, [64, 64, 64]]);
     }
   } else {
     if (isBlock([x, y - 1])) {
-      ctx.beginPath();
-
-      ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3] / 255})`;
-      ctx.rect(wrap(x * pixelSize, 0, canvas.width), wrap(y * pixelSize + (pixelSize * 1 / 4), 0, canvas.height), pixelSize, (pixelSize * 3 / 4));
-      ctx.fill();
-
-      ctx.beginPath();
-
-      ctx.fillStyle = `rgba(${lerp(96, color[0], 0.2)}, ${lerp(96, color[1], 0.2)}, ${lerp(96, color[2], 0.5)}, 1)`;
-      ctx.rect(wrap(x * pixelSize, 0, canvas.width), wrap(y * pixelSize, 0, canvas.height), pixelSize, (pixelSize * 1 / 4));
-      ctx.fill();
+      rects.push([0, 0, 1, 0.25, lerpArray(color, [96, 96, 96, 255], 0.8)]);
+      rects.push([0, 0.25, 1, 0.75, color]);
     } else {
-      ctx.beginPath();
-
-      ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3] / 255})`;
-      ctx.rect(wrap(x * pixelSize, 0, canvas.width), wrap(y * pixelSize, 0, canvas.height), pixelSize, pixelSize);
-      ctx.fill();
+      rects.push([0, 0, 1, 1, color]);
     }
   }
 
+  //draw draw buffer
+  for (const rect of rects) {
+    ctx.beginPath();
+
+    ctx.fillStyle = `rgba(${rect[4][0]}, ${rect[4][1]}, ${rect[4][2]}, 1)`;
+    ctx.rect(wrap((x + rect[0]) * pixelSize, 0, canvas.width), wrap((y + rect[1]) * pixelSize, 0, canvas.height), pixelSize * rect[2], pixelSize * rect[3]);
+    ctx.fill();
+  }
+
+  // write color to grid
   const pos = `${wrap(x, 0, width)},${wrap(y, 0, height)}`;
 
   const pixel = pixels.get(pos);
@@ -458,16 +436,6 @@ function setColor(x, y, color) {
 
     pixels.set(pos, pixel);
   }
-}
-
-function setVelocity(x, y, velocity) {
-  const pos = `${wrap(x, 0, width)},${wrap(y, 0, height)}`;
-
-  const pixel = pixels.get(pos);
-
-  pixel["velocity"] = velocity;
-
-  pixels.set(pos, pixel);
 }
 
 function setID(x, y, id) {
@@ -498,6 +466,14 @@ function isBlock(pos) {
   return isArrayEqual(getColor(pos[0], pos[1]), [128, 128, 128, 255]);
 }
 
+function getRequiredIDsFormHue(hue) {
+  let required = 2 ** Math.round(hue / 36);
+  if (required >= 32) { // wired logic to skip hue value of 144 because it is to similar to 108
+    required /= 2;
+  }
+  return required;
+}
+
 function darkenColor(color) {
   return [Math.max(color[0] - 32, 0), Math.max(color[1] - 32, 0), Math.max(color[2] - 32, 0), color[3]];
 }
@@ -507,7 +483,7 @@ function createSource(pos, hue) {
   setColor(pos[0], pos[1], sources[sources.length - 1].color);
 
   let ids = [];
-  for (let i = 0; i < 2 ** (hue / 36); i++) {
+  for (let i = 0; i < getRequiredIDsFormHue(hue); i++) {
     ids.push(nextSourceID)
     nextSourceID++;
   }
@@ -522,7 +498,7 @@ function createSource(pos, hue) {
 function drawAt(clientPos) {
   pos = [Math.floor((clientPos[0] + camOffset.x - 4) / pixelSize), Math.floor((clientPos[1] + camOffset.y - 4) / pixelSize)];
   if (isBlock(pos)) {
-    setColor(pos[0], pos[1], [64, 64, 64, 255]);
+    setColor(pos[0], pos[1], "free");
   }
   if (!isBlock([pos[0], pos[1] + 1])) {
     setColor(pos[0], pos[1] + 1, getColor(pos[0], pos[1] + 1));
@@ -539,6 +515,9 @@ for (let i = 0; i < 100; i++) {
   let hue = 0;
   while (Math.random() < 0.2) {
     hue += 36;
+    if (hue == 144) {
+      hue += 36
+    }
   }
   createSource([Math.round(Math.random() * width), Math.round(Math.random() * height)], hue);
 }
