@@ -40,7 +40,7 @@ canvas {
     background-color: rgba(255, 255, 255, 0.5);
     position: absolute;
     bottom: calc(1vw * var(--scale));
-    background-image: url("/arrow.svg");
+    background-image: url("assets/arrow.svg");
     background-repeat: no-repeat;
     background-size: 75%;
     background-position: calc(1vw * var(--scale));
