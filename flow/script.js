@@ -144,6 +144,12 @@ canvas.addEventListener("mousemove", (event) => {
   // console.log(getHue(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)), getID(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)));
 });
 
+document.addEventListener('mouseleave', () => {
+  mouseStartPos.x = null;
+  mouseStartPos.y = null;
+  drawing = false;
+});
+
 canvas.addEventListener("touchstart", (event) => {
   drawing = true;
   drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY]);
