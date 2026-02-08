@@ -505,8 +505,14 @@ function darkenColor(color) {
 function createSource(pos, hue) {
   sources.push(new Source(pos, nextSourceID, hue));
   setColor(pos[0], pos[1], sources[sources.length - 1].color);
-  setID(pos[0], pos[1], new Set([nextSourceID]));
-  nextSourceID++;
+
+  let ids = [];
+  for (let i = 0; i < 2 ** (hue / 36); i++) {
+    ids.push(nextSourceID)
+    nextSourceID++;
+  }
+
+  setID(pos[0], pos[1], new Set(ids));
 
   if (!isBlock([pos[0], pos[1] + 1])) {
     setColor(pos[0], pos[1] + 1, getColor(pos[0], pos[1] + 1));
