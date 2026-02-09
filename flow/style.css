@@ -1,6 +1,6 @@
 .main {
-    height: 0;
-    width: 0;
+    width: 100vw;
+    height: 100vh;
     position: absolute;
     top: 0;
     left: 0;
@@ -34,6 +34,7 @@ canvas {
     --scale: 1.5;
     width: calc(8vw * var(--scale));
     height: calc(8vw * var(--scale));
+    z-index: 10;
     border: none;
     border-radius: calc(1vw * var(--scale));
     cursor: pointer;

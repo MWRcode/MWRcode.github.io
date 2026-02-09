@@ -11,7 +11,7 @@ let nextSourceID = 0;
 
 const arrowMovementSpeed = 1.8;
 
-const useTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+const useTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0 || true;
 
 // Setup
 const canvas = document.getElementById("canvas");
@@ -34,6 +34,8 @@ if (!useTouch) {
 } else {
   buttons = { up: document.getElementById("up"), down: document.getElementById("down"), left: document.getElementById("left"), right: document.getElementById("right") };
 }
+
+const worldDiv = document.querySelector(".main");
 
 let drawing = false;
 
@@ -108,7 +110,7 @@ window.addEventListener("resize", function () {
   camOffset.y = clamp(camOffset.y, 0, 2008 - window.innerHeight);
 });
 
-canvas.addEventListener("mousedown", (event) => {
+worldDiv.addEventListener("mousedown", (event) => {
   if (event.button == 1) {
     mouseStartPos.x = event.clientX;
     mouseStartPos.y = event.clientY;
@@ -119,7 +121,7 @@ canvas.addEventListener("mousedown", (event) => {
   console.log("hue:", getHue(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)), "ID:", getID(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)));
 });
 
-canvas.addEventListener("mouseup", (event) => {
+document.addEventListener("mouseup", (event) => {
   if (event.button == 1 & mouseStartPos.x != null) {
     camOffset.x += mouseStartPos.x - event.clientX;
     camOffset.y += mouseStartPos.y - event.clientY;
@@ -131,7 +133,7 @@ canvas.addEventListener("mouseup", (event) => {
   }
 });
 
-canvas.addEventListener("mousemove", (event) => {
+worldDiv.addEventListener("mousemove", (event) => {
   if (mouseStartPos.x != null) {
     camOffset.x += mouseStartPos.x - event.clientX;
     camOffset.y += mouseStartPos.y - event.clientY;
@@ -150,19 +152,19 @@ document.addEventListener('mouseleave', () => {
   drawing = false;
 });
 
-canvas.addEventListener("touchstart", (event) => {
+worldDiv.addEventListener("touchstart", (event) => {
   drawing = true;
   drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY]);
 });
 
-canvas.addEventListener("touchend", (event) => {
+document.addEventListener("touchend", (event) => {
   if (drawing) {
     drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY]);
     drawing = false;
   }
 });
 
-canvas.addEventListener("touchmove", (event) => {
+worldDiv.addEventListener("touchmove", (event) => {
   if (drawing) {
     drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY]);
   }
@@ -393,6 +395,8 @@ function getHue(x, y) {
 
 function setColor(x, y, color) {
   let rects = [];
+
+  [x, y] = [wrap(x, 0, width), wrap(y, 0, height)];
   
   if (color == "free") {
     color = [64, 64, 64, 255];
@@ -420,7 +424,7 @@ function setColor(x, y, color) {
     ctx.beginPath();
 
     ctx.fillStyle = `rgba(${rect[4][0]}, ${rect[4][1]}, ${rect[4][2]}, 1)`;
-    ctx.rect(wrap((x + rect[0]) * pixelSize, 0, canvas.width), wrap((y + rect[1]) * pixelSize, 0, canvas.height), pixelSize * rect[2], pixelSize * rect[3]);
+    ctx.rect((x + rect[0]) * pixelSize, (y + rect[1]) * pixelSize, pixelSize * rect[2], pixelSize * rect[3]);
     ctx.fill();
   }
 
