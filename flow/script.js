@@ -41,6 +41,8 @@ let drawing = false;
 
 let input = { "up": false, "down": false, "left": false, "right": false };
 
+const offsets = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
 // Helper functions
 function getDistance(xpos1, ypos1, xpos2, ypos2) {
   return Math.sqrt((xpos1 - xpos2) ** 2 + (ypos1 - ypos2) ** 2);
@@ -118,7 +120,7 @@ worldDiv.addEventListener("mousedown", (event) => {
     drawing = true;
     drawAt([event.clientX, event.clientY]);
   }
-  console.log("hue:", getHue(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)), "ID:", getID(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)));
+  console.log("hue:", getHue(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)), "ID:", getID(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)), "Connections:", getConnections(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)));
 });
 
 document.addEventListener("mouseup", (event) => {
@@ -306,7 +308,7 @@ class Source {
       offsetedPositons = [];
 
       // check neighbors
-      for (const offset of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const offset of getConnections(pos[0], pos[1])) {
         offsetpos = [offset[0] + pos[0], offset[1] + pos[1]];
 
         if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || isBlock(offsetpos)) continue;
@@ -371,6 +373,9 @@ function getColor(x, y) {
   if (pixel === undefined) {
     return [128, 128, 128, 255];
   }
+  if (pixel.color === undefined) {
+    return [128, 128, 128, 255];
+  }
   return pixel.color;
 }
 
@@ -393,6 +398,14 @@ function getHue(x, y) {
   return pixel.hue;
 }
 
+function getConnections(x, y) {
+  const pixel = pixels.get(`${wrap(x, 0, width)},${wrap(y, 0, height)}`);
+  if (pixel === undefined) {
+    return [];
+  }
+  return pixel.connections;
+}
+
 function setColor(x, y, color) {
   let rects = [];
 
@@ -402,20 +415,40 @@ function setColor(x, y, color) {
     color = [64, 64, 64, 255];
   }
   
+  const connections = getConnections(x, y);
+
   // create draw buffer
   if (isArrayEqual(color, [64, 64, 64, 255])) {
-    if (isBlock([x, y - 1])) {
-      rects.push([0, 0, 1, 0.5, [96, 96, 96]]);
-      rects.push([0, 0.5, 1, 0.5, [64, 64, 64]]);
+    if (!connections.some(connection => connection[0] == 0 && connection[1] == -1)) {
+      rects.push([1/8, 1/8, 3/4, 1/2, [96, 96, 96]]);
+      rects.push([1/8, 5/8, 3/4, 1/4, [64, 64, 64]]);
     } else {
-      rects.push([0, 0, 1, 1, [64, 64, 64]]);
+      rects.push([1/8, 1/8, 3/4, 3/4, [64, 64, 64]]);
+    }
+
+    for (const connection of connections) {
+      if (connection[0] == 0) {
+        rects.push([1/8, connection[1] == -1 ? 0 : 7/8, 3/4, 1/8, [64, 64, 64]]);
+      } else {
+        rects.push([connection[0] == -1 ? 0 : 7/8, 1/8, 1/8, 3/4, [64, 64, 64]]);
+        rects.push([connection[0] == -1 ? 0 : 7/8, 1/8, 1/8, 1/2, [96, 96, 96]]);
+      }
     }
   } else {
-    if (isBlock([x, y - 1])) {
-      rects.push([0, 0, 1, 0.25, lerpArray(color, [96, 96, 96, 255], 0.8)]);
-      rects.push([0, 0.25, 1, 0.75, color]);
+    if (!connections.some(connection => connection[0] == 0 && connection[1] == -1)) {
+      rects.push([1/8, 1/8, 3/4, 1/4, lerpArray(color, [96, 96, 96, 255], 0.8)]);
+      rects.push([1/8, 3/8, 3/4, 1/2, color]);
     } else {
-      rects.push([0, 0, 1, 1, color]);
+      rects.push([1/8, 1/8, 3/4, 3/4, color]);
+    }
+
+    for (const connection of connections) {
+      if (connection[0] == 0) {
+        rects.push([1/8, connection[1] == -1 ? 0 : 7/8, 3/4, 1/8, color]);
+      } else {
+        rects.push([connection[0] == -1 ? 0 : 7/8, 1/8, 1/8, 3/4, color]);
+        rects.push([connection[0] == -1 ? 0 : 7/8, 1/8, 1/8, 1/4, lerpArray(color, [96, 96, 96, 255], 0.8)]);
+      }
     }
   }
 
@@ -462,6 +495,20 @@ function setHue(x, y, hue) {
   pixels.set(pos, pixel);
 }
 
+function setConnections(x, y, connections) {
+  const pos = `${wrap(x, 0, width)},${wrap(y, 0, height)}`;
+
+  const pixel = pixels.get(pos);
+
+  if (pixel === undefined) {
+    pixels.set(pos, { "connections": connections });
+  } else {
+    pixel["connections"] = connections;
+
+    pixels.set(pos, pixel);
+  }
+}
+
 function isFree(pos) {
   return isArrayEqual(getColor(pos[0], pos[1]), [64, 64, 64, 255]);
 }
@@ -493,6 +540,7 @@ function createSource(pos, hue) {
   }
 
   setID(pos[0], pos[1], new Set(ids));
+  setConnections(pos[0], pos[1], []);
 
   if (!isBlock([pos[0], pos[1] + 1])) {
     setColor(pos[0], pos[1] + 1, getColor(pos[0], pos[1] + 1));
@@ -500,8 +548,28 @@ function createSource(pos, hue) {
 }
 
 function drawAt(clientPos) {
-  pos = [Math.floor((clientPos[0] + camOffset.x - 4) / pixelSize), Math.floor((clientPos[1] + camOffset.y - 4) / pixelSize)];
+  pos = [Math.floor((clientPos[0] + camOffset.x) / pixelSize), Math.floor((clientPos[1] + camOffset.y) / pixelSize)];
+  
   if (isBlock(pos)) {
+    // update connections
+    let connections = [];
+    for (const offset of offsets) {
+      const offsetpos = [pos[0] + offset[0], pos[1] + offset[1]];
+      
+      if (!isBlock(offsetpos) && connections.length < 3) {
+        const offsetConnections = getConnections(offsetpos[0], offsetpos[1]);
+
+        if (offsetConnections.length < 3) {
+          connections.push(offset);
+
+          offsetConnections.push([-offset[0], -offset[1]]);
+          setConnections(offsetpos[0], offsetpos[1], offsetConnections);
+          setColor(offsetpos[0], offsetpos[1], getColor(offsetpos[0], offsetpos[1]));
+        }
+      }
+    }
+    setConnections(pos[0], pos[1], connections);
+
     setColor(pos[0], pos[1], "free");
   }
   if (!isBlock([pos[0], pos[1] + 1])) {
