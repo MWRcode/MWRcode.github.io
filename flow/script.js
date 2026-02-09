@@ -11,7 +11,7 @@ let nextSourceID = 0;
 
 const arrowMovementSpeed = 1.8;
 
-const useTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0 || true;
+const useTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
 
 // Setup
 const canvas = document.getElementById("canvas");
