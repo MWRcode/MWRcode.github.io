@@ -305,7 +305,7 @@ class Source {
     let hue = this.hue;
 
     while (true) {
-      const connections = getValue(pos, "connections")
+      const connections = getValue(pos, "connections");
 
       // check neighbors
       for (const offset of connections2offsets(connections)) {
@@ -346,9 +346,13 @@ class Source {
             if (offsetConnections == "1101" && connectionIndex == 3) state = 3
             if (offsetConnections == "1110" && connectionIndex == 0) state = 3
 
-            setValue(offsetpos, "state", state);
-            drawTile(offsetpos);
-            return true;
+            if (state == 3) {
+              setValue(offsetpos, "state", state);
+              hue += 36;
+              drawTile(offsetpos);
+            } else {
+              return false;
+            }
           }
           else if (state == 2) {
             const connectionIndex = offset2connections[JSON.stringify([-offset[0], -offset[1]])];
@@ -357,9 +361,13 @@ class Source {
             if (offsetConnections == "1101" && connectionIndex == 1) state = 3
             if (offsetConnections == "1110" && connectionIndex == 2) state = 3
 
-            setValue(offsetpos, "state", state);
-            drawTile(offsetpos);
-            return true;
+            if (state == 3) {
+              setValue(offsetpos, "state", state);
+              hue += 36;
+              drawTile(offsetpos);
+            } else {
+              return false;
+            }
           }
           else if (state == 3) {
             hue += 36;
@@ -390,6 +398,7 @@ function drawTile(pos, override) {
   let connections = getValue(pos, "connections");
   let type = getValue(pos, "type");
   let hue = getValue(pos, "hue");
+  let state = getValue(pos, "state");
 
   if (override) {
     if (override["connections"]) {
@@ -400,6 +409,9 @@ function drawTile(pos, override) {
     }
     if (override["hue"]) {
       hue = override["hue"];
+    }
+    if (override["state"]) {
+      state = override["state"];
     }
   }
 
@@ -422,7 +434,7 @@ function drawTile(pos, override) {
         filenameType = "f";
       }
     } else if (type == "combiner") {
-      filenameType = `c${getValue(pos, "state")}`;
+      filenameType = `c${state}`;
     }
 
     ctx.drawImage(hueShift(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], hue === undefined ? 0 : hue), pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
