@@ -23,6 +23,8 @@ const ctx = canvas.getContext("2d");
 canvas.width = width * pixelSize;
 canvas.height = height * pixelSize;
 
+ctx.imageSmoothingEnabled = false;
+
 let camOffset = { x: 0, y: 0 };
 let mouseStartPos = { x: null, y: null };
 
@@ -42,6 +44,24 @@ let drawing = false;
 let input = { "up": false, "down": false, "left": false, "right": false };
 
 const offsets = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+const offset2connections = {
+  "[1,0]": 1,
+  "[-1,0]": 3,
+  "[0,1]": 2,
+  "[0,-1]": 0
+}
+
+const filenames = ["0000e", "1000e", "0010e", "0100e", "0001e", "0101e", "1010e", "0110e", "0011e", "1100e", "1001e", "1101c0", "0111c0", "1110c0", "1011c0", "0000s", "0000f", "1000s", "0010s", "0100s", "0001s", "1000f", "0010f", "0100f", "0001f", "0101f", "1010f", "0110f", "0011f", "1100f", "1001f", "1101c1", "1101c2", "1101c3", "0111c1", "0111c2", "0111c3", "1110c1", "1110c2", "1110c3", "1011c1", "1011c2", "1011c3"];
+
+let tileImages = {};
+for (let i = 0; i < filenames.length; i++) {
+  const img = new Image(16, 16);
+
+  img.src = `/assets/tiles/${JSON.stringify(i).padStart(2, "0")}.png`;
+
+  tileImages[filenames[i]] = img;
+}
 
 // Helper functions
 function getDistance(xpos1, ypos1, xpos2, ypos2) {
@@ -67,19 +87,6 @@ function isArrayEqual(arr1, arr2) {
     }
   }
   return true;
-}
-
-function lerpArray(arr1, arr2, t) {
-  if (arr1.length != arr2.length) {
-    return NaN;
-  }
-
-  let arr = [];
-
-  for (let i = 0; i < arr1.length; i++) {
-    arr.push(lerp(arr1[i], arr2[i], t));
-  }
-  return arr;
 }
 
 function hsl2rgb(h, s, l) {
@@ -120,7 +127,8 @@ worldDiv.addEventListener("mousedown", (event) => {
     drawing = true;
     drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
   }
-  console.log("hue:", getHue(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)), "ID:", getID(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)), "Connections:", getConnections(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)), "Color:", getColor(Math.floor((event.clientX + camOffset.x - 4) / pixelSize), Math.floor((event.clientY + camOffset.y - 4) / pixelSize)));
+  const pos = [Math.floor((event.clientX + camOffset.x) / pixelSize), Math.floor((event.clientY + camOffset.y) / pixelSize)];
+  console.log("Hue: ", getValue(pos, "hue"), "Connections: ", getValue(pos, "connections"), "Type: ", getValue(pos, "type"));
 });
 
 document.addEventListener("mouseup", (event) => {
@@ -284,338 +292,330 @@ class Queue {
 }
 
 class Source {
-  constructor(pos, id, hue) {
+  constructor(pos, hue) {
     this.pos = pos;
     this.hue = hue;
     this.color = hsl2rgb(hue, 100, 50);
-    this.id = id;
   }
   produceFlow() {
     let offsetpos;
     let pos = this.pos;
-    let pass = false;
     let visited = new Set();
     let forks = new Queue();
-    let offsetedPositons = [];
-    let color = darkenColor(this.color);
     let hue = this.hue;
-    let id = new Set([this.id]);
-    let hueTiles = 0;
 
     while (true) {
-      pass = false;
-      offsetedPositons = [];
-
-      const connections = getConnections(pos[0], pos[1])
+      const connections = getValue(pos, "connections")
 
       // check neighbors
-      for (const offset of connections) {
+      for (const offset of connections2offsets(connections)) {
         offsetpos = [offset[0] + pos[0], offset[1] + pos[1]];
 
-        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || isBlock(offsetpos)) continue;
+        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || getValue(offsetpos, "type") == "filled" || (getValue(offsetpos, "hue") != hue && getValue(offsetpos, "hue") != undefined)) continue;
 
-        offsetedPositons.push(offsetpos);
+        forks.enqueue(offsetpos);
 
-        if (isFree(offsetpos)) {
-          setColor(offsetpos[0], offsetpos[1], color);
-          setID(offsetpos[0], offsetpos[1], id);
-          setHue(offsetpos[0], offsetpos[1], hue);
+        if (getValue(offsetpos, "type") == "hole" && getValue(offsetpos, "hue") === undefined) {
+          setValue(offsetpos, "hue", hue);
+          drawTile(offsetpos);
           return true;
-        }
+        } else if (getValue(offsetpos, "type") == "combiner") {
+          let state = getValue(offsetpos, "state");
+          const offsetConnections = getValue(offsetpos, "connections").map(b => b ? 1 : 0).join('');
 
-        const offsetid = getID(offsetpos[0], offsetpos[1]);
-        const combinedID = new Set([...id, ...offsetid]);
-        if (![...offsetid].some(i => id.has(i)) && isArrayEqual(getColor(offsetpos[0], offsetpos[1]), color) && getRequiredIDsFormHue(hue + 36) <= combinedID.size && getConnections(offsetpos[0], offsetpos[1]).length == 3) {
-          hue += 36;
-          if (hue == 144) { hue += 36 }
-          color = darkenColor(hsl2rgb(hue, 100, 50));
+          if (state == 0) {
+            const connectionIndex = offset2connections[JSON.stringify([-offset[0], -offset[1]])];
+            if (offsetConnections == "0111" && connectionIndex == 3) state = 1
+            if (offsetConnections == "0111" && connectionIndex == 1) state = 2
+            if (offsetConnections == "1011" && connectionIndex == 0) state = 1
+            if (offsetConnections == "1011" && connectionIndex == 2) state = 2
+            if (offsetConnections == "1101" && connectionIndex == 1) state = 1
+            if (offsetConnections == "1101" && connectionIndex == 3) state = 2
+            if (offsetConnections == "1110" && connectionIndex == 2) state = 1
+            if (offsetConnections == "1110" && connectionIndex == 0) state = 2
 
-          setColor(offsetpos[0], offsetpos[1], color);
-          setID(offsetpos[0], offsetpos[1], new Set([...id, ...offsetid]));
-          setHue(offsetpos[0], offsetpos[1], hue);
-          return true;
+            setValue(offsetpos, "state", state);
+            setValue(offsetpos, "hue", hue);
+            drawTile(offsetpos);
+            return true;
+          }
+          else if (state == 1) {
+            const connectionIndex = offset2connections[JSON.stringify([-offset[0], -offset[1]])];
+            if (offsetConnections == "0111" && connectionIndex == 1) state = 3
+            if (offsetConnections == "1011" && connectionIndex == 2) state = 3
+            if (offsetConnections == "1101" && connectionIndex == 3) state = 3
+            if (offsetConnections == "1110" && connectionIndex == 0) state = 3
+
+            setValue(offsetpos, "state", state);
+            drawTile(offsetpos);
+            return true;
+          }
+          else if (state == 2) {
+            const connectionIndex = offset2connections[JSON.stringify([-offset[0], -offset[1]])];
+            if (offsetConnections == "0111" && connectionIndex == 3) state = 3
+            if (offsetConnections == "1011" && connectionIndex == 0) state = 3
+            if (offsetConnections == "1101" && connectionIndex == 1) state = 3
+            if (offsetConnections == "1110" && connectionIndex == 2) state = 3
+
+            setValue(offsetpos, "state", state);
+            drawTile(offsetpos);
+            return true;
+          }
+          else if (state == 3) {
+            hue += 36;
+          }
         }
       }
 
-      // add color tiles to queue
       visited.add(`${pos[0]},${pos[1]}`);
 
-      for (const offsetpos of offsetedPositons) {
-        if (getHue(offsetpos[0], offsetpos[1]) >= hue) {
-          forks.enqueue(offsetpos);
-          pass = true;
-        }
-      }
-
       // start next iteration
-      if (!pass & forks.size == 0) {
+      if (forks.size == 0) {
         return false;
       } else {
         while (visited.has(`${pos[0]},${pos[1]}`)) {
           if (forks.size == 0) {
             return false;
           }
-          id = new Set([...id, ...getID(pos[0], pos[1])]);
           pos = forks.dequeue();
-          const offsethue = getHue(pos[0], pos[1]);
-          if (offsethue != hue) {
-            color = getColor(pos[0], pos[1]);
-            hue = offsethue;
-          }
         }
       }
     }
   }
 }
 
-function getColor(x, y) {
-  const pixel = pixels.get(`${wrap(x, 0, width)},${wrap(y, 0, height)}`);
-  if (pixel === undefined) {
-    return [128, 128, 128, 255];
-  }
-  if (pixel.color === undefined) {
-    return [128, 128, 128, 255];
-  }
-  return pixel.color;
-}
-
-function getID(x, y) {
-  const pixel = pixels.get(`${wrap(x, 0, width)},${wrap(y, 0, height)}`);
-  if (pixel === undefined) {
-    return undefined;
-  }
-  return pixel.id;
-}
-
-function getHue(x, y) {
-  const pixel = pixels.get(`${wrap(x, 0, width)},${wrap(y, 0, height)}`);
-  if (pixel === undefined) {
-    return -1;
-  }
-  if (pixel.hue === undefined) {
-    return -1;
-  }
-  return pixel.hue;
-}
-
-function getConnections(x, y) {
-  const pixel = pixels.get(`${wrap(x, 0, width)},${wrap(y, 0, height)}`);
-  if (pixel === undefined) {
-    return [];
-  }
-  return pixel.connections;
-}
-
-function setColor(x, y, color) {
-  let rects = [];
-
-  [x, y] = [wrap(x, 0, width), wrap(y, 0, height)];
+function drawTile(pos, override) {
+  pos = [wrap(pos[0], 0, width), wrap(pos[1], 0, height)];
   
-  if (color == "free") {
-    color = [64, 64, 64, 255];
+  let connections = getValue(pos, "connections");
+  let type = getValue(pos, "type");
+  let hue = getValue(pos, "hue");
+
+  if (override) {
+    if (override["connections"]) {
+      connections = override["connections"];
+    }
+    if (override["type"]) {
+      type = override["type"];
+    }
+    if (override["hue"]) {
+      hue = override["hue"];
+    }
   }
-  if (color == "block") {
-    color = [128, 128, 128, 255];
-  }
-  
-  const connections = getConnections(x, y);
 
   // create draw buffer
-  if (isArrayEqual(color, [128, 128, 128, 255])) {
-    rects.push([-1/8, -1/8, 5/4, 5/4, [128, 128, 128]]);
-  } else if (isArrayEqual(color, [64, 64, 64, 255])) {
-    if (!connections.some(connection => connection[0] == 0 && connection[1] == -1)) {
-      rects.push([1/8, 1/8, 3/4, 1/2, [96, 96, 96]]);
-      rects.push([1/8, 5/8, 3/4, 1/4, [64, 64, 64]]);
-    } else {
-      rects.push([1/8, 1/8, 3/4, 3/4, [64, 64, 64]]);
-    }
-
-    for (const connection of connections) {
-      if (connection[0] == 0) {
-        rects.push([1/8, connection[1] == -1 ? 0 : 7/8, 3/4, 1/8, [64, 64, 64]]);
-      } else {
-        rects.push([connection[0] == -1 ? 0 : 7/8, 1/8, 1/8, 3/4, [64, 64, 64]]);
-        rects.push([connection[0] == -1 ? 0 : 7/8, 1/8, 1/8, 1/2, [96, 96, 96]]);
-      }
-    }
-  } else {
-    if (!connections.some(connection => connection[0] == 0 && connection[1] == -1)) {
-      rects.push([1/8, 1/8, 3/4, 1/4, lerpArray(color, [96, 96, 96, 255], 0.8)]);
-      rects.push([1/8, 3/8, 3/4, 1/2, color]);
-    } else {
-      rects.push([1/8, 1/8, 3/4, 3/4, color]);
-    }
-
-    for (const connection of connections) {
-      if (connection[0] == 0) {
-        rects.push([1/8, connection[1] == -1 ? 0 : 7/8, 3/4, 1/8, color]);
-      } else {
-        rects.push([connection[0] == -1 ? 0 : 7/8, 1/8, 1/8, 3/4, color]);
-        rects.push([connection[0] == -1 ? 0 : 7/8, 1/8, 1/8, 1/4, lerpArray(color, [96, 96, 96, 255], 0.8)]);
-      }
-    }
-  }
-
-  //draw draw buffer
-  for (const rect of rects) {
+  if (type == "filled") {
     ctx.beginPath();
 
-    ctx.fillStyle = `rgba(${rect[4][0]}, ${rect[4][1]}, ${rect[4][2]}, 1)`;
-    ctx.rect((x + rect[0]) * pixelSize, (y + rect[1]) * pixelSize, pixelSize * rect[2], pixelSize * rect[3]);
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
     ctx.fill();
   }
+  else {
+    let filenameType = "e";
+    if (type == "source") {
+      filenameType = "s";
+    } else if (type == "hole") {
+      if (hue === undefined) {
+        filenameType = "e";
+      } else {
+        filenameType = "f";
+      }
+    } else if (type == "combiner") {
+      filenameType = `c${getValue(pos, "state")}`;
+    }
 
-  // write color to grid
-  const pos = `${wrap(x, 0, width)},${wrap(y, 0, height)}`;
-
-  const pixel = pixels.get(pos);
-
-  if (pixel === undefined) {
-    pixels.set(pos, { "color": color });
-  } else {
-    pixel["color"] = color;
-
-    pixels.set(pos, pixel);
+    ctx.drawImage(hueShift(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], hue === undefined ? 0 : hue), pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
   }
 }
 
-function setID(x, y, id) {
-  const pos = `${wrap(x, 0, width)},${wrap(y, 0, height)}`;
+function getValue(pos, key) {
+  const pixel = pixels.get(`${wrap(pos[0], 0, width)},${wrap(pos[1], 0, height)}`);
 
-  const pixel = pixels.get(pos);
+  if (pixel === undefined || pixel[key] === undefined) {
+    switch (key) {
+      case "connections":
+        return [false, false, false, false];
+      case "type":
+        return "filled";
+      case "state":
+        return 0;
+      default:
+        return undefined;
+    }
+  }
 
-  pixel["id"] = id;
+  return pixel[key];
+}
 
+function setValue(pos, key, value) {
+  pos = `${wrap(pos[0], 0, width)},${wrap(pos[1], 0, height)}`;
+
+  let pixel = pixels.get(pos);
+
+  if (value === undefined) {
+    if (pixel === undefined) {
+      return;
+    }
+
+    delete pixel[key];
+  } else {
+    if (pixel === undefined) {
+      pixel = {};
+    }
+  
+    pixel[key] = value;
+  }
   pixels.set(pos, pixel);
 }
 
-function setHue(x, y, hue) {
-  const pos = `${wrap(x, 0, width)},${wrap(y, 0, height)}`;
+function deletePixel(pos) {
+  const key = `${wrap(pos[0], 0, width)},${wrap(pos[1], 0, height)}`;
 
-  const pixel = pixels.get(pos);
+  drawTile(pos, {"type": "filled"});
 
-  pixel["hue"] = hue;
-
-  pixels.set(pos, pixel);
+  pixels.delete(key);
 }
 
-function setConnections(x, y, connections) {
-  const pos = `${wrap(x, 0, width)},${wrap(y, 0, height)}`;
+function connections2offsets(connections) {
+  let offsets = [];
+  if (connections[0]) offsets.push([0, -1]);
+  if (connections[1]) offsets.push([1, 0]);
+  if (connections[2]) offsets.push([0, 1]);
+  if (connections[3]) offsets.push([-1, 0]);
 
-  const pixel = pixels.get(pos);
-
-  if (pixel === undefined) {
-    pixels.set(pos, { "connections": connections });
-  } else {
-    pixel["connections"] = connections;
-
-    pixels.set(pos, pixel);
-  }
-}
-
-function setNull(x, y) {
-  const pos = `${wrap(x, 0, width)},${wrap(y, 0, height)}`;
-
-  setColor(x, y, "block");
-
-  pixels.delete(pos);
-}
-
-function isFree(pos) {
-  return isArrayEqual(getColor(pos[0], pos[1]), [64, 64, 64, 255]);
-}
-
-function isBlock(pos) {
-  return isArrayEqual(getColor(pos[0], pos[1]), [128, 128, 128, 255]);
-}
-
-function isSource(pos) {
- return getID(pos[0], pos[1]) != undefined && getHue(pos[0], pos[1]) == -1;
-}
-
-function getRequiredIDsFormHue(hue) {
-  let required = 2 ** Math.round(hue / 36);
-  if (required >= 32) { // wired logic to skip hue value of 144 because it is to similar to 108
-    required /= 2;
-  }
-  return required;
+  return offsets;
 }
 
 function darkenColor(color) {
   return [Math.max(color[0] - 32, 0), Math.max(color[1] - 32, 0), Math.max(color[2] - 32, 0), color[3]];
 }
 
+function hueShift(img, hue) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = img.width;
+  canvas.height = img.height;
+
+  ctx.drawImage(img, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+      let r = data[i] / 255;
+      let g = data[i + 1] / 255;
+      let b = data[i + 2] / 255;
+
+      // Convert RGB to HSL
+      let max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) {
+          h = s = 0;
+      } else {
+          let d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch (max) {
+              case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+              case g: h = (b - r) / d + 2; break;
+              case b: h = (r - g) / d + 4; break;
+          }
+          h /= 6;
+      }
+
+      // Shift hue
+      h = (h + hue / 360) % 1;
+      if (h < 0) h += 1;
+
+      // Convert HSL back to RGB
+      function hue2rgb(p, q, t) {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1 / 6) return p + (q - p) * 6 * t;
+          if (t < 1 / 2) return q;
+          if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+          return p;
+      }
+
+      let r2, g2, b2;
+      if (s === 0) {
+          r2 = g2 = b2 = l;
+      } else {
+          let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          let p = 2 * l - q;
+          r2 = hue2rgb(p, q, h + 1 / 3);
+          g2 = hue2rgb(p, q, h);
+          b2 = hue2rgb(p, q, h - 1 / 3);
+      }
+
+      data[i] = Math.round(r2 * 255);
+      data[i + 1] = Math.round(g2 * 255);
+      data[i + 2] = Math.round(b2 * 255);
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+
+  return canvas;
+}
+
 function createSource(pos, hue) {
-  sources.push(new Source(pos, nextSourceID, hue));
-  setColor(pos[0], pos[1], sources[sources.length - 1].color);
+  sources.push(new Source(pos, hue));
 
-  let ids = [];
-  for (let i = 0; i < getRequiredIDsFormHue(hue); i++) {
-    ids.push(nextSourceID)
-    nextSourceID++;
-  }
-
-  setID(pos[0], pos[1], new Set(ids));
-  setConnections(pos[0], pos[1], []);
-
-  if (!isBlock([pos[0], pos[1] + 1])) {
-    setColor(pos[0], pos[1] + 1, getColor(pos[0], pos[1] + 1));
-  }
+  setValue(pos, "type", "source");
+  setValue(pos, "hue", hue);
+  drawTile(pos);
 }
 
 function drawAt(clientPos, drawingType, shift) {
   pos = [Math.floor((clientPos[0] + camOffset.x) / pixelSize), Math.floor((clientPos[1] + camOffset.y) / pixelSize)];
   
-  if (isBlock(pos) && drawingType == "hole") {
+  if (getValue(pos, "type") == "filled" && drawingType == "hole") {
     // update connections
     const maxConnections = shift ? 3 : 2;
-    let connections = [];
+    let connections = [false, false, false, false];
 
     for (const offset of offsets) {
       const offsetpos = [pos[0] + offset[0], pos[1] + offset[1]];
       
-      if (!isBlock(offsetpos) && connections.length < maxConnections) {
-        const offsetConnections = getConnections(offsetpos[0], offsetpos[1]);
+      if (getValue(offsetpos, "type") != "filled" && connections.filter(value => value === true).length < maxConnections) {
+        const offsetConnections = getValue(offsetpos, "connections");
 
-        if (offsetConnections.length < (isSource(offsetpos) ? 1 : maxConnections)) {
-          connections.push(offset);
+        if (offsetConnections.filter(value => value === true).length < (getValue(offsetpos, "type") == "source" ? 1 : maxConnections)) {
+          connections[offset2connections[JSON.stringify(offset)]] = true;
 
-          offsetConnections.push([-offset[0], -offset[1]]);
-          setConnections(offsetpos[0], offsetpos[1], offsetConnections);
-          setColor(offsetpos[0], offsetpos[1], getColor(offsetpos[0], offsetpos[1]));
+          offsetConnections[offset2connections[JSON.stringify([-offset[0], -offset[1]])]] = true;
+
+          setValue(offsetpos, "connections", offsetConnections);
+          if (getValue(offsetpos, "type") != "source") setValue(offsetpos, "type", offsetConnections.filter(value => value === true).length == 3 ? "combiner" : "hole");
+          drawTile(offsetpos);
         }
       }
     }
-    setConnections(pos[0], pos[1], connections);
 
-    setColor(pos[0], pos[1], "free");
+    setValue(pos, "connections", connections);
+    setValue(pos, "type", connections.filter(value => value === true).length == 3 ? "combiner" : "hole");
 
-    // check below for hightlight updates
-    if (!isBlock([pos[0], pos[1] + 1])) {
-      setColor(pos[0], pos[1] + 1, getColor(pos[0], pos[1] + 1));
-    }
+    drawTile(pos)
   }
-  else if (!isBlock(pos) && drawingType == "fill" && !isSource(pos)) {
+  else if ((getValue(pos, "type") == "hole" || getValue(pos, "type") == "combiner") && drawingType == "fill") {
     // update connections
     for (const offset of offsets) {
       const offsetpos = [pos[0] + offset[0], pos[1] + offset[1]];
       
-      if (!isBlock(offsetpos)) {
-        let offsetConnections = getConnections(offsetpos[0], offsetpos[1]);
+      if (getValue(offsetpos, "type") != "filled") {
+        let offsetConnections = getValue(offsetpos, "connections");
 
-        offsetConnections = offsetConnections.filter(connection => !(connection[0] == -offset[0] && connection[1] == -offset[1]));
+        offsetConnections[offset2connections[JSON.stringify([-offset[0], -offset[1]])]] = false;
 
-        setConnections(offsetpos[0], offsetpos[1], offsetConnections);
-        setColor(offsetpos[0], offsetpos[1], getColor(offsetpos[0], offsetpos[1]));
+        setValue(offsetpos, "connections", offsetConnections);
+        if (getValue(offsetpos, "type") != "source") setValue(offsetpos, "type", "hole");
+        setValue(offsetpos, "state", undefined);
+        drawTile(offsetpos);
       }
     }
-    setNull(pos[0], pos[1]);
 
-    // check below for hightlight updates
-    if (!isBlock([pos[0], pos[1] + 1])) {
-      setColor(pos[0], pos[1] + 1, getColor(pos[0], pos[1] + 1));
-    }
+    deletePixel(pos);
   }
 }
 
@@ -624,29 +624,32 @@ function updateMovement(deltaTime) {
   camOffset.y += (+input.down - +input.up) * arrowMovementSpeed * deltaTime;
 }
 
-// world gen
-for (let i = 0; i < 100; i++) {
-  let hue = 0;
-  while (Math.random() < 0.2) {
-    hue += 36;
-    if (hue == 144) {
-      hue += 36
-    }
-  }
-  createSource([Math.round(Math.random() * width), Math.round(Math.random() * height)], hue);
-}
-
-// for (let x = 0; x < canvas.width; x += pixelSize) {
-//   for (let y = 0; y < canvas.height; y += pixelSize) {
-//     drawAt([x, y], "hole")
-//   }
-// }
-
-// Simulation
 let lastTime = 0;
 let lastUpdate = 0;
 
-update(0);
+tileImages["1011c3"].onload = () => {
+  // world gen
+  for (let i = 0; i < 100; i++) {
+    let hue = 0;
+    while (Math.random() < 0.2) {
+      hue += 36;
+      if (hue == 144) {
+        hue += 36
+      }
+    }
+    createSource([Math.round(Math.random() * width), Math.round(Math.random() * height)], hue);
+  }
+  
+  // for (let x = 0; x < canvas.width; x += pixelSize) {
+  //   for (let y = 0; y < canvas.height; y += pixelSize) {
+  //     drawAt([x, y], "hole")
+  //   }
+  // }
+  
+  // start simulation
+  update(0);
+}
+
 function update(timeStamp) {
   const deltaTime = timeStamp - lastTime;
   lastTime = timeStamp;
@@ -659,8 +662,8 @@ function update(timeStamp) {
 
     lastUpdate = timeStamp;
   }
-
-  // update movement (outside of 20 tps game loop)
+  
+  // update graphics (outside of 20 tps game loop)
   updateMovement(deltaTime);
 
   canvas.style.transform = `translate(${-camOffset.x}px, ${-camOffset.y}px)`;
