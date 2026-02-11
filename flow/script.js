@@ -58,7 +58,7 @@ let tileImages = {};
 for (let i = 0; i < filenames.length; i++) {
   const img = new Image(16, 16);
 
-  img.src = `/assets/tiles/${JSON.stringify(i).padStart(2, "0")}.png`;
+  img.src = `assets/tiles/${JSON.stringify(i).padStart(2, "0")}.png`;
 
   tileImages[filenames[i]] = img;
 }
