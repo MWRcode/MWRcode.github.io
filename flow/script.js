@@ -3,12 +3,6 @@ const [width, height] = [100, 100];
 
 const pixelSize = 32;
 
-let sources = [];
-
-const pixels = new Map();
-
-let nextSourceID = 0;
-
 const arrowMovementSpeed = 1.8;
 
 const useTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
@@ -25,8 +19,28 @@ canvas.height = height * pixelSize;
 
 ctx.imageSmoothingEnabled = false;
 
+const sideCanvases = [];
+for (const c of [[1, [1, 0]], [2, [0, 1]], [3, [1, 1]]]) {
+  const sideCanvas = document.getElementById(`canvas${c[0]}`);
+
+  sideCanvas.style.backgroundColor = "#808080";
+
+  const sidectx = sideCanvas.getContext("2d");
+
+  sideCanvas.width = width * pixelSize;
+  sideCanvas.height = height * pixelSize;
+
+  sideCanvases.push([sideCanvas, sidectx, c[1]]);
+}
+
+const pixels = new Map();
+
+let sources = [];
+
 let camOffset = { x: 0, y: 0 };
 let mouseStartPos = { x: null, y: null };
+
+let resetCombiners = [];
 
 let buttons;
 if (!useTouch) {
@@ -52,6 +66,7 @@ const offset2connections = {
   "[0,-1]": 0
 }
 
+// import tiles
 const filenames = ["0000e", "1000e", "0010e", "0100e", "0001e", "0101e", "1010e", "0110e", "0011e", "1100e", "1001e", "1101c0", "0111c0", "1110c0", "1011c0", "0000s", "0000f", "1000s", "0010s", "0100s", "0001s", "1000f", "0010f", "0100f", "0001f", "0101f", "1010f", "0110f", "0011f", "1100f", "1001f", "1101c1", "1101c2", "1101c3", "0111c1", "0111c2", "0111c3", "1110c1", "1110c2", "1110c3", "1011c1", "1011c2", "1011c3"];
 
 let tileImages = {};
@@ -63,7 +78,7 @@ for (let i = 0; i < filenames.length; i++) {
   tileImages[filenames[i]] = img;
 }
 
-// Helper functions
+// helper functions
 function getDistance(xpos1, ypos1, xpos2, ypos2) {
   return Math.sqrt((xpos1 - xpos2) ** 2 + (ypos1 - ypos2) ** 2);
 }
@@ -347,9 +362,10 @@ class Source {
             if (offsetConnections == "1110" && connectionIndex == 0) state = 3
 
             if (state == 3) {
-              setValue(offsetpos, "state", state);
+              drawTile(offsetpos, {"state": 3});
+              setValue(offsetpos, "state", 0);
               hue += 36;
-              drawTile(offsetpos);
+              resetCombiners.push(offsetpos);
             } else {
               return false;
             }
@@ -362,15 +378,13 @@ class Source {
             if (offsetConnections == "1110" && connectionIndex == 2) state = 3
 
             if (state == 3) {
-              setValue(offsetpos, "state", state);
+              drawTile(offsetpos, {"state": 3});
+              setValue(offsetpos, "state", 0);
               hue += 36;
-              drawTile(offsetpos);
+              resetCombiners.push(offsetpos);
             } else {
               return false;
             }
-          }
-          else if (state == 3) {
-            hue += 36;
           }
         }
       }
@@ -634,6 +648,8 @@ function drawAt(clientPos, drawingType, shift) {
 function updateMovement(deltaTime) {
   camOffset.x += (+input.right - +input.left) * arrowMovementSpeed * deltaTime;
   camOffset.y += (+input.down - +input.up) * arrowMovementSpeed * deltaTime;
+  camOffset.x = wrap(camOffset.x, 0, canvas.width);
+  camOffset.y = wrap(camOffset.y, 0, canvas.width);
 }
 
 let lastTime = 0;
@@ -643,7 +659,7 @@ tileImages["1011c3"].onload = () => {
   // world gen
   for (let i = 0; i < 100; i++) {
     let hue = 0;
-    while (Math.random() < 0.2) {
+    while (Math.random() < 0.5) {
       hue += 36;
       if (hue == 144) {
         hue += 36
@@ -654,7 +670,7 @@ tileImages["1011c3"].onload = () => {
   
   // for (let x = 0; x < canvas.width; x += pixelSize) {
   //   for (let y = 0; y < canvas.height; y += pixelSize) {
-  //     drawAt([x, y], "hole")
+  //     drawAt([x, y], "hole", false);
   //   }
   // }
   
@@ -672,6 +688,12 @@ function update(timeStamp) {
       source.produceFlow();
     }
 
+    for (const combiner of resetCombiners) {
+      setValue(combiner, "state", 0);
+      drawTile(combiner, {"state": 3});
+    }
+    resetCombiners = [];
+
     lastUpdate = timeStamp;
   }
   
@@ -679,6 +701,11 @@ function update(timeStamp) {
   updateMovement(deltaTime);
 
   canvas.style.transform = `translate(${-camOffset.x}px, ${-camOffset.y}px)`;
+
+  for (const sideCanvas of sideCanvases) {
+    sideCanvas[1].drawImage(canvas, 0, 0);
+    sideCanvas[0].style.transform = `translate(${-camOffset.x + (sideCanvas[2][0] * canvas.width)}px, ${-camOffset.y + (sideCanvas[2][1] * canvas.width)}px)`;
+  }
 
   requestAnimationFrame(update);
 }

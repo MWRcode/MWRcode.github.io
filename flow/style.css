@@ -1,68 +1,68 @@
 .main {
-    width: 100vw;
-    height: 100vh;
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 div {
-    margin: 0px;
-    padding: 0px;
+  margin: 0px;
+  padding: 0px;
 }
 
 body {
-    margin: 0px;
-    height: 100vh;
-    overflow: hidden;
-    background: black;
+  margin: 0px;
+  height: 100vh;
+  overflow: hidden;
+  background: black;
 }
 
 canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 #controls button {
-    --scale: 1.5;
-    width: calc(8vw * var(--scale));
-    height: calc(8vw * var(--scale));
-    z-index: 10;
-    border: none;
-    border-radius: calc(1vw * var(--scale));
-    cursor: pointer;
-    background-color: rgba(255, 255, 255, 0.5);
-    position: absolute;
-    bottom: calc(1vw * var(--scale));
-    background-image: url("assets/arrow.svg");
-    background-repeat: no-repeat;
-    background-size: 75%;
-    background-position: calc(1vw * var(--scale));
+  --scale: 1.5;
+  width: calc(8vw * var(--scale));
+  height: calc(8vw * var(--scale));
+  z-index: 10;
+  border: none;
+  border-radius: calc(1vw * var(--scale));
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.5);
+  position: absolute;
+  bottom: calc(1vw * var(--scale));
+  background-image: url("assets/arrow.svg");
+  background-repeat: no-repeat;
+  background-size: 75%;
+  background-position: calc(1vw * var(--scale));
 }
 
 #controls button:active {
-    background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
 #up {
-    right: calc(1vw * var(--scale));
-    rotate: 270deg;
+  right: calc(1vw * var(--scale));
+  rotate: 270deg;
 }
 
 #down {
-    right: calc(10vw * var(--scale));
-    rotate: 90deg;
+  right: calc(10vw * var(--scale));
+  rotate: 90deg;
 }
 
 #left {
-    left: calc(1vw * var(--scale));
-    rotate: 180deg;
+  left: calc(1vw * var(--scale));
+  rotate: 180deg;
 }
 
 #right {
-    left: calc(10vw * var(--scale));
+  left: calc(10vw * var(--scale));
 }
