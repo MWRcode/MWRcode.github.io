@@ -267,18 +267,18 @@ document.addEventListener("keyup", (event) => {
   }
 });
 
-buttons.drawType.addEventListener("mousedown", () => {
-  const text = buttons.drawType.innerText;
-  if (text == "Hole") {
-    buttons.drawType.innerText = "Fill";
-  } else if (text == "Fill") {
-    buttons.drawType.innerText = "Combiner";
-  } else if (text == "Combiner") {
-    buttons.drawType.innerText = "Hole";
-  }
-});
-
 if (useTouch) {
+  buttons.drawType.addEventListener("mousedown", () => {
+    const text = buttons.drawType.innerText;
+    if (text == "Hole") {
+      buttons.drawType.innerText = "Fill";
+    } else if (text == "Fill") {
+      buttons.drawType.innerText = "Combiner";
+    } else if (text == "Combiner") {
+      buttons.drawType.innerText = "Hole";
+    }
+  });
+
   for (const direction of ["up", "down", "left", "right"]) {
     for (const event of ["touchstart", "mousedown"]) {
       buttons[direction].addEventListener(event, () => {
