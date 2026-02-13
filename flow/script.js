@@ -242,7 +242,7 @@ if (useTouch) {
     buttons[direction].addEventListener("touchmove", (e) => {
       const rect = e.target.getBoundingClientRect();
       const pos = [e.touches[0].clientX, e.touches[0].clientY];
-      
+
       input[direction] = pos[0] >= rect.x && pos[1] >= rect.y && pos[0] <= rect.right && pos[1] <= rect.bottom;
     });
   }
@@ -356,7 +356,7 @@ class Source {
             setValue(offsetpos, "state", state);
             setValue(offsetpos, "hue", hue);
             drawTile(offsetpos);
-            return true;
+            return false;
           }
           else if (state == 1) {
             const connectionIndex = offset2connections[JSON.stringify([-offset[0], -offset[1]])];
@@ -366,7 +366,7 @@ class Source {
             if (offsetConnections == "1110" && connectionIndex == 0) state = 3
 
             if (state == 3) {
-              drawTile(offsetpos, {"state": 3});
+              drawTile(offsetpos, { "state": 3 });
               setValue(offsetpos, "state", 0);
               hue += 36;
               resetCombiners.push(offsetpos);
@@ -382,7 +382,7 @@ class Source {
             if (offsetConnections == "1110" && connectionIndex == 2) state = 3
 
             if (state == 3) {
-              drawTile(offsetpos, {"state": 3});
+              drawTile(offsetpos, { "state": 3 });
               setValue(offsetpos, "state", 0);
               hue += 36;
               resetCombiners.push(offsetpos);
@@ -390,9 +390,11 @@ class Source {
               return false;
             }
           }
+          else if (state == 3) {
+            return true;
+          }
         }
       }
-
       visited.add(`${pos[0]},${pos[1]}`);
 
       // start next iteration
@@ -412,7 +414,7 @@ class Source {
 
 function drawTile(pos, override) {
   pos = [wrap(pos[0], 0, width), wrap(pos[1], 0, height)];
-  
+
   let connections = getValue(pos, "connections");
   let type = getValue(pos, "type");
   let hue = getValue(pos, "hue");
@@ -493,7 +495,7 @@ function setValue(pos, key, value) {
     if (pixel === undefined) {
       pixel = {};
     }
-  
+
     pixel[key] = value;
   }
   pixels.set(pos, pixel);
@@ -502,7 +504,7 @@ function setValue(pos, key, value) {
 function deletePixel(pos) {
   const key = `${wrap(pos[0], 0, width)},${wrap(pos[1], 0, height)}`;
 
-  drawTile(pos, {"type": "filled"});
+  drawTile(pos, { "type": "filled" });
 
   pixels.delete(key);
 }
@@ -534,54 +536,54 @@ function hueShift(img, hue) {
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
-      let r = data[i] / 255;
-      let g = data[i + 1] / 255;
-      let b = data[i + 2] / 255;
+    let r = data[i] / 255;
+    let g = data[i + 1] / 255;
+    let b = data[i + 2] / 255;
 
-      // Convert RGB to HSL
-      let max = Math.max(r, g, b), min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
-      if (max === min) {
-          h = s = 0;
-      } else {
-          let d = max - min;
-          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-          switch (max) {
-              case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-              case g: h = (b - r) / d + 2; break;
-              case b: h = (r - g) / d + 4; break;
-          }
-          h /= 6;
+    // Convert RGB to HSL
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+      h = s = 0;
+    } else {
+      let d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
       }
+      h /= 6;
+    }
 
-      // Shift hue
-      h = (h + hue / 360) % 1;
-      if (h < 0) h += 1;
+    // Shift hue
+    h = (h + hue / 360) % 1;
+    if (h < 0) h += 1;
 
-      // Convert HSL back to RGB
-      function hue2rgb(p, q, t) {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1 / 6) return p + (q - p) * 6 * t;
-          if (t < 1 / 2) return q;
-          if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-          return p;
-      }
+    // Convert HSL back to RGB
+    function hue2rgb(p, q, t) {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    }
 
-      let r2, g2, b2;
-      if (s === 0) {
-          r2 = g2 = b2 = l;
-      } else {
-          let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-          let p = 2 * l - q;
-          r2 = hue2rgb(p, q, h + 1 / 3);
-          g2 = hue2rgb(p, q, h);
-          b2 = hue2rgb(p, q, h - 1 / 3);
-      }
+    let r2, g2, b2;
+    if (s === 0) {
+      r2 = g2 = b2 = l;
+    } else {
+      let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      let p = 2 * l - q;
+      r2 = hue2rgb(p, q, h + 1 / 3);
+      g2 = hue2rgb(p, q, h);
+      b2 = hue2rgb(p, q, h - 1 / 3);
+    }
 
-      data[i] = Math.round(r2 * 255);
-      data[i + 1] = Math.round(g2 * 255);
-      data[i + 2] = Math.round(b2 * 255);
+    data[i] = Math.round(r2 * 255);
+    data[i + 1] = Math.round(g2 * 255);
+    data[i + 2] = Math.round(b2 * 255);
   }
 
   ctx.putImageData(imageData, 0, 0);
@@ -599,7 +601,7 @@ function createSource(pos, hue) {
 
 function drawAt(clientPos, drawingType, shift) {
   pos = [Math.floor((clientPos[0] + camOffset.x) / pixelSize), Math.floor((clientPos[1] + camOffset.y) / pixelSize)];
-  
+
   if (getValue(pos, "type") == "filled" && drawingType == "hole") {
     // update connections
     const maxConnections = shift ? 3 : 2;
@@ -607,7 +609,7 @@ function drawAt(clientPos, drawingType, shift) {
 
     for (const offset of offsets) {
       const offsetpos = [pos[0] + offset[0], pos[1] + offset[1]];
-      
+
       if (getValue(offsetpos, "type") != "filled" && connections.filter(value => value === true).length < maxConnections) {
         const offsetConnections = getValue(offsetpos, "connections");
 
@@ -634,7 +636,7 @@ function drawAt(clientPos, drawingType, shift) {
     // update connections
     for (const offset of offsets) {
       const offsetpos = [pos[0] + offset[0], pos[1] + offset[1]];
-      
+
       if (getValue(offsetpos, "type") != "filled") {
         let offsetConnections = getValue(offsetpos, "connections");
 
@@ -675,13 +677,13 @@ tileImages["1011c3"].onload = () => {
     }
     createSource([Math.round(Math.random() * width), Math.round(Math.random() * height)], hue);
   }
-  
+
   // for (let x = 0; x < canvas.width; x += pixelSize) {
   //   for (let y = 0; y < canvas.height; y += pixelSize) {
   //     drawAt([x, y], "hole", false);
   //   }
   // }
-  
+
   // start simulation
   update(0);
 }
@@ -695,25 +697,28 @@ function update(timeStamp) {
     completedAllUpdates.flow = true;
 
     for (const source of sources) {
-      completedAllUpdates.flow = completedAllUpdates.flow && !source.produceFlow();
+      const outcome = source.produceFlow();
+      completedAllUpdates.flow = completedAllUpdates.flow && !outcome;
     }
 
     for (const combiner of resetCombiners) {
       setValue(combiner, "state", 0);
-      drawTile(combiner, {"state": 3});
+      drawTile(combiner, { "state": 3 });
     }
     resetCombiners = [];
 
+    for (const sideCanvas of sideCanvases) {
+      sideCanvas[1].drawImage(canvas, 0, 0);
+    }
     lastUpdate = timeStamp;
   }
-  console.log(completedAllUpdates.flow)
+
   // update graphics (outside of 20 tps game loop)
   updateMovement(deltaTime);
 
   canvas.style.transform = `translate(${-camOffset.x}px, ${-camOffset.y}px)`;
 
   for (const sideCanvas of sideCanvases) {
-    sideCanvas[1].drawImage(canvas, 0, 0);
     sideCanvas[0].style.transform = `translate(${-camOffset.x + (sideCanvas[2][0] * canvas.width)}px, ${-camOffset.y + (sideCanvas[2][1] * canvas.width)}px)`;
   }
 
