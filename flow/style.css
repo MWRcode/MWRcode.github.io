@@ -66,3 +66,18 @@ canvas {
 #right {
   left: calc(10vw * var(--scale));
 }
+
+#drawType {
+  --scale: 1.5;
+  width: calc(12vw * var(--scale));
+  height: calc(4vw * var(--scale));
+  z-index: 10;
+  border: none;
+  border-radius: calc(1vw * var(--scale));
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.5);
+  position: absolute;
+  top: calc(1vw * var(--scale));
+  right: calc(1vw * var(--scale));
+  font-size: calc(2.5vw * var(--scale));
+}

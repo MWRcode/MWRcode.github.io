@@ -46,13 +46,22 @@ let completedAllUpdates = {
   "flow": false
 };
 
-let buttons;
+const hueShiftCanvas = document.createElement("canvas");
+const hueShiftCtx = hueShiftCanvas.getContext("2d", { "willReadFrequently": true });
+
+hueShiftCanvas.width = 16;
+hueShiftCanvas.height = 16;
+
+let buttons = {};
 if (!useTouch) {
   document.querySelectorAll("#controls button").forEach(element => {
     element.remove();
   });
+  document.querySelector("#drawType").remove();
 } else {
-  buttons = { up: document.getElementById("up"), down: document.getElementById("down"), left: document.getElementById("left"), right: document.getElementById("right") };
+  for (const button of ["up", "down", "left", "right", "drawType"]) {
+    buttons[button] = document.getElementById(button);
+  }
 }
 
 const worldDiv = document.querySelector(".main");
@@ -181,19 +190,50 @@ document.addEventListener('mouseleave', () => {
 
 worldDiv.addEventListener("touchstart", (event) => {
   drawing = true;
-  drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY]);
+
+  let shift = false;
+  let type = "hole";
+
+  const text = buttons.drawType.innerText;
+  if (text == "Fill") {
+    type = "fill";
+  } else if (text == "Combiner") {
+    shift = true;
+  }
+
+  drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], type, shift);
 });
 
 document.addEventListener("touchend", (event) => {
   if (drawing) {
-    drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY]);
+    let shift = false;
+    let type = "hole";
+
+    const text = buttons.drawType.innerText;
+    if (text == "Fill") {
+      type = "fill";
+    } else if (text == "Combiner") {
+      shift = true;
+    }
+
+    drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], type, shift);
     drawing = false;
   }
 });
 
 worldDiv.addEventListener("touchmove", (event) => {
   if (drawing) {
-    drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY]);
+    let shift = false;
+    let type = "hole";
+
+    const text = buttons.drawType.innerText;
+    if (text == "Fill") {
+      type = "fill";
+    } else if (text == "Combiner") {
+      shift = true;
+    }
+
+    drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], type, shift);
   }
 });
 
@@ -224,6 +264,17 @@ document.addEventListener("keyup", (event) => {
   }
   if (event.key == "ArrowRight") {
     input.right = false;
+  }
+});
+
+buttons.drawType.addEventListener("mousedown", () => {
+  const text = buttons.drawType.innerText;
+  if (text == "Hole") {
+    buttons.drawType.innerText = "Fill";
+  } else if (text == "Fill") {
+    buttons.drawType.innerText = "Combiner";
+  } else if (text == "Combiner") {
+    buttons.drawType.innerText = "Hole";
   }
 });
 
@@ -524,15 +575,9 @@ function darkenColor(color) {
 }
 
 function hueShift(img, hue) {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  hueShiftCtx.drawImage(img, 0, 0);
 
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  ctx.drawImage(img, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const imageData = hueShiftCtx.getImageData(0, 0, 16, 16);
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -586,9 +631,9 @@ function hueShift(img, hue) {
     data[i + 2] = Math.round(b2 * 255);
   }
 
-  ctx.putImageData(imageData, 0, 0);
+  hueShiftCtx.putImageData(imageData, 0, 0);
 
-  return canvas;
+  return hueShiftCanvas;
 }
 
 function createSource(pos, hue) {
@@ -665,7 +710,7 @@ function updateMovement(deltaTime) {
 let lastTime = 0;
 let lastUpdate = 0;
 
-tileImages["1011c3"].onload = () => {
+tileImages[filenames[filenames.length - 1]].onload = () => {
   // world gen
   for (let i = 0; i < 100; i++) {
     let hue = 0;
