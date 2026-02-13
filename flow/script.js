@@ -42,6 +42,10 @@ let mouseStartPos = { x: null, y: null };
 
 let resetCombiners = [];
 
+let completedAllUpdates = {
+  "flow": false
+};
+
 let buttons;
 if (!useTouch) {
   document.querySelectorAll("#controls button").forEach(element => {
@@ -619,10 +623,12 @@ function drawAt(clientPos, drawingType, shift) {
       }
     }
 
+    completedAllUpdates.flow = false;
+
     setValue(pos, "connections", connections);
     setValue(pos, "type", connections.filter(value => value === true).length == 3 ? "combiner" : "hole");
 
-    drawTile(pos)
+    drawTile(pos);
   }
   else if ((getValue(pos, "type") == "hole" || getValue(pos, "type") == "combiner") && drawingType == "fill") {
     // update connections
@@ -640,6 +646,8 @@ function drawAt(clientPos, drawingType, shift) {
         drawTile(offsetpos);
       }
     }
+
+    completedAllUpdates.flow = false;
 
     deletePixel(pos);
   }
@@ -683,9 +691,11 @@ function update(timeStamp) {
   lastTime = timeStamp;
 
   // update game state
-  if (timeStamp - lastUpdate > 50) {
+  if (timeStamp - lastUpdate > 50 && !completedAllUpdates.flow) {
+    completedAllUpdates.flow = true;
+
     for (const source of sources) {
-      source.produceFlow();
+      completedAllUpdates.flow = completedAllUpdates.flow && !source.produceFlow();
     }
 
     for (const combiner of resetCombiners) {
@@ -696,7 +706,7 @@ function update(timeStamp) {
 
     lastUpdate = timeStamp;
   }
-  
+  console.log(completedAllUpdates.flow)
   // update graphics (outside of 20 tps game loop)
   updateMovement(deltaTime);
 
