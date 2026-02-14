@@ -36,15 +36,14 @@ for (const c of [[1, [1, 0]], [2, [0, 1]], [3, [1, 1]]]) {
 const pixels = new Map();
 
 let sources = [];
+let updateSources = new Set();
+
+let nextSourceID = 0;
 
 let camOffset = { x: 0, y: 0 };
 let mouseStartPos = { x: null, y: null };
 
 let resetCombiners = [];
-
-let completedAllUpdates = {
-  "flow": false
-};
 
 const hueShiftCanvas = document.createElement("canvas");
 const hueShiftCtx = hueShiftCanvas.getContext("2d", { "willReadFrequently": true });
@@ -156,7 +155,7 @@ worldDiv.addEventListener("mousedown", (event) => {
     drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
   }
   const pos = [Math.floor((event.clientX + camOffset.x) / pixelSize), Math.floor((event.clientY + camOffset.y) / pixelSize)];
-  console.log("Hue: ", getValue(pos, "hue"), "Connections: ", getValue(pos, "connections"), "Type: ", getValue(pos, "type"));
+  console.log("Hue: ", getValue(pos, "hue"), "Connections: ", getValue(pos, "connections"), "Type: ", getValue(pos, "type"), "ID:", getValue(pos, "id"));
 });
 
 document.addEventListener("mouseup", (event) => {
@@ -362,10 +361,10 @@ class Queue {
 }
 
 class Source {
-  constructor(pos, hue) {
+  constructor(pos, hue, id) {
     this.pos = pos;
     this.hue = hue;
-    this.color = hsl2rgb(hue, 100, 50);
+    this.id = id;
   }
   produceFlow() {
     let offsetpos;
@@ -373,6 +372,7 @@ class Source {
     let visited = new Set();
     let forks = new Queue();
     let hue = this.hue;
+    let id = [this.id];
 
     while (true) {
       const connections = getValue(pos, "connections");
@@ -383,15 +383,22 @@ class Source {
 
         const offsetHue = getValue(offsetpos, "hue");
         const offsetType = getValue(offsetpos, "type");
-        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || offsetType == "filled" || (offsetHue != hue && offsetHue !== undefined)) continue;
+        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || offsetType == "filled" || (offsetHue != hue && offsetHue !== undefined) || offsetType == "source") continue;
 
         forks.enqueue(offsetpos);
 
+        const offsetID = getValue(offsetpos, "id");
+        if (offsetID !== undefined) {
+          setValue(offsetpos, "id", [...new Set(id.concat(offsetID))]);
+        }
+
         if (offsetType == "hole" && offsetHue === undefined) {
           setValue(offsetpos, "hue", hue);
+          setValue(offsetpos, "id", id);
           drawTile(offsetpos);
           return true;
-        } else if (offsetType == "combiner") {
+        }
+        else if (offsetType == "combiner") {
           let state = getValue(offsetpos, "state");
           const offsetConnections = getValue(offsetpos, "connections").map(b => b ? 1 : 0).join('');
 
@@ -406,10 +413,19 @@ class Source {
             if (offsetConnections == "1110" && connectionIndex == 2) state = 1
             if (offsetConnections == "1110" && connectionIndex == 0) state = 2
 
-            setValue(offsetpos, "state", state);
-            setValue(offsetpos, "hue", hue);
-            drawTile(offsetpos);
-            return false;
+            if (state > 0) {
+              setValue(offsetpos, "state", state);
+              setValue(offsetpos, "hue", hue);
+
+              if (getValue(offsetpos, "id") === undefined) {
+                drawTile(offsetpos);
+              } else {
+                drawTile(offsetpos, { "state": 3 });
+              }
+
+              setValue(offsetpos, "id", id);
+              return false;
+            }
           }
           else if (state == 1) {
             const connectionIndex = offset2connections[JSON.stringify([-offset[0], -offset[1]])];
@@ -421,6 +437,14 @@ class Source {
             if (state == 3) {
               drawTile(offsetpos, { "state": 3 });
               setValue(offsetpos, "state", 0);
+
+              for (const updateID of offsetID) {
+                updateSources.add(updateID);
+              }
+
+              id = id.concat(offsetID);
+              setValue(offsetpos, "id", id);
+
               hue += 36;
               resetCombiners.push(offsetpos);
             } else {
@@ -437,14 +461,19 @@ class Source {
             if (state == 3) {
               drawTile(offsetpos, { "state": 3 });
               setValue(offsetpos, "state", 0);
+
+              for (const updateID of offsetID) {
+                updateSources.add(updateID);
+              }
+
+              id = id.concat(offsetID);
+              setValue(offsetpos, "id", id);
+
               hue += 36;
               resetCombiners.push(offsetpos);
             } else {
               return false;
             }
-          }
-          else if (state == 3) {
-            return true;
           }
         }
       }
@@ -642,11 +671,16 @@ function hueShift(img, hue) {
 }
 
 function createSource(pos, hue) {
-  sources.push(new Source(pos, hue));
+  sources.push(new Source(pos, hue, nextSourceID));
 
   setValue(pos, "type", "source");
   setValue(pos, "hue", hue);
+  setValue(pos, "id", [nextSourceID]);
   drawTile(pos);
+
+  updateSources.add(nextSourceID);
+
+  nextSourceID++;
 }
 
 function drawAt(clientPos, drawingType, shift) {
@@ -660,24 +694,33 @@ function drawAt(clientPos, drawingType, shift) {
 
     for (const offset of offsets) {
       const offsetpos = [pos[0] + offset[0], pos[1] + offset[1]];
+      const offsetType = getValue(offsetpos, "type");
 
-      if (getValue(offsetpos, "type") != "filled" && connectionsCount < maxConnections) {
+      if (offsetType != "filled" && connectionsCount < maxConnections) {
         const offsetConnections = getValue(offsetpos, "connections");
 
-        if (offsetConnections.filter(value => value === true).length < (getValue(offsetpos, "type") == "source" ? 1 : maxConnections)) {
+        if (offsetConnections.filter(value => value === true).length < (offsetType == "source" ? 1 : maxConnections)) {
           connections[offset2connections[JSON.stringify(offset)]] = true;
           connectionsCount++;
 
-          offsetConnections[offset2connections[JSON.stringify([-offset[0], -offset[1]])]] = true;
+          const connectionsIndex = offset2connections[JSON.stringify([-offset[0], -offset[1]])];
+          if (!offsetConnections[connectionsIndex]) {
+            offsetConnections[connectionsIndex] = true;
+            const offsetID = getValue(offsetpos, "id");
+
+            if (offsetID !== undefined) {
+              for (const id of offsetID) {
+                updateSources.add(id);
+              }
+            }
+          }
 
           setValue(offsetpos, "connections", offsetConnections);
-          if (getValue(offsetpos, "type") != "source") setValue(offsetpos, "type", offsetConnections.filter(value => value === true).length == 3 ? "combiner" : "hole");
+          if (offsetType != "source") setValue(offsetpos, "type", offsetConnections.filter(value => value === true).length == 3 ? "combiner" : "hole");
           drawTile(offsetpos);
         }
       }
     }
-
-    completedAllUpdates.flow = false;
 
     setValue(pos, "connections", connections);
     setValue(pos, "type", connectionsCount == 3 ? "combiner" : "hole");
@@ -685,6 +728,13 @@ function drawAt(clientPos, drawingType, shift) {
     drawTile(pos);
   }
   else if ((getValue(pos, "type") == "hole" || getValue(pos, "type") == "combiner") && drawingType == "fill") {
+    const ids = getValue(pos, "id");
+    if (ids !== undefined) {
+      for (const id of ids) {
+        updateSources.add(id);
+      }
+    }
+
     // update connections
     for (const offset of offsets) {
       const offsetpos = [pos[0] + offset[0], pos[1] + offset[1]];
@@ -692,7 +742,17 @@ function drawAt(clientPos, drawingType, shift) {
       if (getValue(offsetpos, "type") != "filled") {
         let offsetConnections = getValue(offsetpos, "connections");
 
-        offsetConnections[offset2connections[JSON.stringify([-offset[0], -offset[1]])]] = false;
+        const connectionsIndex = offset2connections[JSON.stringify([-offset[0], -offset[1]])];
+        if (offsetConnections[connectionsIndex]) {
+          offsetConnections[connectionsIndex] = false;
+
+          const offsetID = getValue(offsetpos, "id");
+          if (offsetID !== undefined) {
+            for (const id of offsetID) {
+              updateSources.add(id);
+            }
+          }
+        }
 
         setValue(offsetpos, "connections", offsetConnections);
         if (getValue(offsetpos, "type") != "source") setValue(offsetpos, "type", "hole");
@@ -700,8 +760,6 @@ function drawAt(clientPos, drawingType, shift) {
         drawTile(offsetpos);
       }
     }
-
-    completedAllUpdates.flow = false;
 
     deletePixel(pos);
   }
@@ -745,19 +803,12 @@ function update(timeStamp) {
   lastTime = timeStamp;
 
   // update game state
-  if (timeStamp - lastUpdate > 50 && !completedAllUpdates.flow) {
-    completedAllUpdates.flow = true;
-
-    for (const source of sources) {
-      const outcome = source.produceFlow();
-      completedAllUpdates.flow = completedAllUpdates.flow && !outcome;
+  if (timeStamp - lastUpdate > 50) {
+    for (const sourceID of updateSources) {
+      if (sources[sourceID].produceFlow() === false) {
+        updateSources.delete(sourceID);
+      }
     }
-
-    for (const combiner of resetCombiners) {
-      setValue(combiner, "state", 0);
-      drawTile(combiner, { "state": 3 });
-    }
-    resetCombiners = [];
 
     for (const sideCanvas of sideCanvases) {
       sideCanvas[1].drawImage(canvas, 0, 0);
