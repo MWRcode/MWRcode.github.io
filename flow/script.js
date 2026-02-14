@@ -381,15 +381,17 @@ class Source {
       for (const offset of connections2offsets(connections)) {
         offsetpos = [offset[0] + pos[0], offset[1] + pos[1]];
 
-        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || getValue(offsetpos, "type") == "filled" || (getValue(offsetpos, "hue") != hue && getValue(offsetpos, "hue") != undefined)) continue;
+        const offsetHue = getValue(offsetpos, "hue");
+        const offsetType = getValue(offsetpos, "type");
+        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || offsetType == "filled" || (offsetHue != hue && offsetHue !== undefined)) continue;
 
         forks.enqueue(offsetpos);
 
-        if (getValue(offsetpos, "type") == "hole" && getValue(offsetpos, "hue") === undefined) {
+        if (offsetType == "hole" && offsetHue === undefined) {
           setValue(offsetpos, "hue", hue);
           drawTile(offsetpos);
           return true;
-        } else if (getValue(offsetpos, "type") == "combiner") {
+        } else if (offsetType == "combiner") {
           let state = getValue(offsetpos, "state");
           const offsetConnections = getValue(offsetpos, "connections").map(b => b ? 1 : 0).join('');
 
@@ -508,7 +510,11 @@ function drawTile(pos, override) {
       filenameType = `c${state}`;
     }
 
-    ctx.drawImage(hueShift(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], hue === undefined ? 0 : hue), pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
+    if (hue === 0 || hue === undefined) {
+      ctx.drawImage(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
+    } else {
+      ctx.drawImage(hueShift(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], hue), pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
+    }
   }
 }
 
@@ -630,7 +636,6 @@ function hueShift(img, hue) {
     data[i + 1] = Math.round(g2 * 255);
     data[i + 2] = Math.round(b2 * 255);
   }
-
   hueShiftCtx.putImageData(imageData, 0, 0);
 
   return hueShiftCanvas;
@@ -651,15 +656,17 @@ function drawAt(clientPos, drawingType, shift) {
     // update connections
     const maxConnections = shift ? 3 : 2;
     let connections = [false, false, false, false];
+    let connectionsCount = 0;
 
     for (const offset of offsets) {
       const offsetpos = [pos[0] + offset[0], pos[1] + offset[1]];
 
-      if (getValue(offsetpos, "type") != "filled" && connections.filter(value => value === true).length < maxConnections) {
+      if (getValue(offsetpos, "type") != "filled" && connectionsCount < maxConnections) {
         const offsetConnections = getValue(offsetpos, "connections");
 
         if (offsetConnections.filter(value => value === true).length < (getValue(offsetpos, "type") == "source" ? 1 : maxConnections)) {
           connections[offset2connections[JSON.stringify(offset)]] = true;
+          connectionsCount++;
 
           offsetConnections[offset2connections[JSON.stringify([-offset[0], -offset[1]])]] = true;
 
@@ -673,7 +680,7 @@ function drawAt(clientPos, drawingType, shift) {
     completedAllUpdates.flow = false;
 
     setValue(pos, "connections", connections);
-    setValue(pos, "type", connections.filter(value => value === true).length == 3 ? "combiner" : "hole");
+    setValue(pos, "type", connectionsCount == 3 ? "combiner" : "hole");
 
     drawTile(pos);
   }
