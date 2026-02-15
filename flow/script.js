@@ -147,12 +147,18 @@ window.addEventListener("resize", function () {
 });
 
 worldDiv.addEventListener("mousedown", (event) => {
+  console.log(event)
   if (event.button == 1) {
     mouseStartPos.x = event.clientX;
     mouseStartPos.y = event.clientY;
   } else {
     drawing = true;
-    drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
+    if (useTouch) {
+      const parameters = getDrawParameters();
+      drawAt([event.clientX, event.clientY], parameters[0], parameters[1]);
+    } else {
+      drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
+    }
   }
   const pos = [Math.floor((event.clientX + camOffset.x) / pixelSize), Math.floor((event.clientY + camOffset.y) / pixelSize)];
   console.log("Hue: ", getValue(pos, "hue"), "Connections: ", getValue(pos, "connections"), "Type: ", getValue(pos, "type"), "ID:", getValue(pos, "id"));
@@ -165,7 +171,12 @@ document.addEventListener("mouseup", (event) => {
     mouseStartPos.x = null;
     mouseStartPos.y = null;
   } else if (drawing) {
-    drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
+    if (useTouch) {
+      const parameters = getDrawParameters();
+      drawAt([event.clientX, event.clientY], parameters[0], parameters[1]);
+    } else {
+      drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
+    }
     drawing = false;
   }
 });
@@ -177,7 +188,12 @@ worldDiv.addEventListener("mousemove", (event) => {
     mouseStartPos.x = event.clientX;
     mouseStartPos.y = event.clientY;
   } else if (drawing) {
-    drawAt([event.clientX, event.clientY], event.which == 1 ? "hole" : "fill", event.shiftKey);
+    if (useTouch) {
+      const parameters = getDrawParameters();
+      drawAt([event.clientX, event.clientY], parameters[0], parameters[1]);
+    } else {
+      drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
+    }
   }
 });
 
@@ -190,49 +206,25 @@ document.addEventListener('mouseleave', () => {
 worldDiv.addEventListener("touchstart", (event) => {
   drawing = true;
 
-  let shift = false;
-  let type = "hole";
+  const parameters = getDrawParameters();
 
-  const text = buttons.drawType.innerText;
-  if (text == "Fill") {
-    type = "fill";
-  } else if (text == "Combiner") {
-    shift = true;
-  }
-
-  drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], type, shift);
+  drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], parameters[0], parameters[1]);
 });
 
 document.addEventListener("touchend", (event) => {
   if (drawing) {
-    let shift = false;
-    let type = "hole";
+    const parameters = getDrawParameters();
 
-    const text = buttons.drawType.innerText;
-    if (text == "Fill") {
-      type = "fill";
-    } else if (text == "Combiner") {
-      shift = true;
-    }
-
-    drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], type, shift);
+    drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], parameters[0], parameters[1]);
     drawing = false;
   }
 });
 
 worldDiv.addEventListener("touchmove", (event) => {
   if (drawing) {
-    let shift = false;
-    let type = "hole";
+    const parameters = getDrawParameters();
 
-    const text = buttons.drawType.innerText;
-    if (text == "Fill") {
-      type = "fill";
-    } else if (text == "Combiner") {
-      shift = true;
-    }
-
-    drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], type, shift);
+    drawAt([event.changedTouches[0].clientX, event.changedTouches[0].clientY], parameters[0], parameters[1]);
   }
 });
 
@@ -605,8 +597,18 @@ function connections2offsets(connections) {
   return offsets;
 }
 
-function darkenColor(color) {
-  return [Math.max(color[0] - 32, 0), Math.max(color[1] - 32, 0), Math.max(color[2] - 32, 0), color[3]];
+function getDrawParameters() {
+  let shift = false;
+  let type = "hole";
+
+  const text = buttons.drawType.innerText;
+  if (text == "Fill") {
+    type = "fill";
+  } else if (text == "Combiner") {
+    shift = true;
+  }
+
+  return [type, shift];
 }
 
 function hueShift(img, hue) {
