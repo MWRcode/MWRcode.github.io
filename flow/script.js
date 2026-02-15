@@ -188,7 +188,8 @@ worldDiv.addEventListener("mousemove", (event) => {
     mouseStartPos.x = event.clientX;
     mouseStartPos.y = event.clientY;
   } else if (drawing) {
-    drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
+    console.log(event)
+    drawAt([event.clientX, event.clientY], event.buttons == 1 ? "hole" : "fill", event.shiftKey);
   }
 });
 
@@ -778,7 +779,7 @@ function updateMovement(deltaTime) {
 }
 
 let lastTime = 0;
-let lastUpdate = 0
+let lastUpdate = 0;
 
 tileImages[filenames[filenames.length - 1]].onload = () => {
   // world gen
