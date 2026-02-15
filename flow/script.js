@@ -778,7 +778,7 @@ function updateMovement(deltaTime) {
 }
 
 let lastTime = 0;
-let lastUpdate = 0;
+let lastUpdate = 0
 
 tileImages[filenames[filenames.length - 1]].onload = () => {
   // world gen
