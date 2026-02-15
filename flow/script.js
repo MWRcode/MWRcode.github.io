@@ -789,7 +789,7 @@ tileImages[filenames[filenames.length - 1]].onload = () => {
   // world gen
   for (let i = 0; i < 100; i++) {
     let hue = 0;
-    while (Math.random() < 0.2) {
+    while (Math.random() < 0.5) {
       hue += 36;
       if (hue == 144) {
         hue += 36
