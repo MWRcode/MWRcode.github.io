@@ -716,7 +716,15 @@ function drawAt(clientPos, drawingType, shift) {
           }
 
           setValue(offsetpos, "connections", offsetConnections);
-          if (offsetType != "source") setValue(offsetpos, "type", offsetConnections.filter(value => value === true).length == 3 ? "combiner" : "hole");
+          if (offsetType != "source") {
+            if (offsetConnections.filter(value => value === true).length == 3) {
+              setValue(offsetpos, "type", "combiner");
+              setValue(offsetpos, "hue", undefined);
+              setValue(offsetpos, "id", undefined);
+            } else {
+              setValue(offsetpos, "type", "hole");
+            }
+          }
           drawTile(offsetpos);
         }
       }
