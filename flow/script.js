@@ -820,9 +820,9 @@ function update(timeStamp) {
       }
     }
 
-    // for (const sideCanvas of sideCanvases) {
-    //   sideCanvas[1].drawImage(canvas, 0, 0);
-    // }
+    for (const sideCanvas of sideCanvases) {
+      sideCanvas[1].drawImage(canvas, 0, 0);
+    }
     lastUpdate = timeStamp;
   }
 
