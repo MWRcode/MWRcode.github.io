@@ -188,12 +188,7 @@ worldDiv.addEventListener("mousemove", (event) => {
     mouseStartPos.x = event.clientX;
     mouseStartPos.y = event.clientY;
   } else if (drawing) {
-    if (useTouch) {
-      const parameters = getDrawParameters();
-      drawAt([event.clientX, event.clientY], parameters[0], parameters[1]);
-    } else {
-      drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
-    }
+    drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
   }
 });
 
