@@ -141,7 +141,7 @@ document.addEventListener('contextmenu', (event) => {
   event.preventDefault();
 });
 
-window.addEventListener("resize", function () {
+window.addEventListener("resize", () => {
   camOffset.x = clamp(camOffset.x, 0, 2008 - window.innerWidth);
   camOffset.y = clamp(camOffset.y, 0, 2008 - window.innerHeight);
 });
@@ -785,7 +785,7 @@ tileImages[filenames[filenames.length - 1]].onload = () => {
   // world gen
   for (let i = 0; i < 100; i++) {
     let hue = 0;
-    while (Math.random() < 0.5) {
+    while (Math.random() < 0.2) {
       hue += 36;
       if (hue == 144) {
         hue += 36
