@@ -1,7 +1,9 @@
 // Variables
 const [width, height] = [100, 100];
 
-const pixelSize = 32;
+const tileSize = 32;
+
+const imageSize = 16;
 
 const arrowMovementSpeed = 1.8;
 
@@ -10,28 +12,25 @@ const useTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || nav
 // Setup
 const canvas = document.getElementById("canvas");
 
-canvas.style.backgroundColor = "#808080";
-
 const ctx = canvas.getContext("2d");
 
-canvas.width = width * pixelSize;
-canvas.height = height * pixelSize;
+canvas.style.backgroundColor = "#808080";
+
+canvas.width = width * 16;
+canvas.height = height * 16;
 
 ctx.imageSmoothingEnabled = false;
 
-const sideCanvases = [];
-for (const c of [[1, [1, 0]], [2, [0, 1]], [3, [1, 1]]]) {
-  const sideCanvas = document.getElementById(`canvas${c[0]}`);
+const displayCanvas = document.getElementById("displayCanvas");
 
-  sideCanvas.style.backgroundColor = "#808080";
+const displayCtx = displayCanvas.getContext("2d");
 
-  const sidectx = sideCanvas.getContext("2d");
+displayCanvas.style.backgroundColor = "#808080";
 
-  sideCanvas.width = width * pixelSize;
-  sideCanvas.height = height * pixelSize;
+displayCanvas.width = window.innerWidth;
+displayCanvas.height = window.innerHeight;
 
-  sideCanvases.push([sideCanvas, sidectx, c[1]]);
-}
+displayCtx.imageSmoothingEnabled = false;
 
 const pixels = new Map();
 
@@ -48,8 +47,8 @@ let resetCombiners = [];
 const hueShiftCanvas = document.createElement("canvas");
 const hueShiftCtx = hueShiftCanvas.getContext("2d", { "willReadFrequently": true });
 
-hueShiftCanvas.width = 16;
-hueShiftCanvas.height = 16;
+hueShiftCanvas.width = imageSize;
+hueShiftCanvas.height = imageSize;
 
 let buttons = {};
 if (!useTouch) {
@@ -142,8 +141,9 @@ document.addEventListener('contextmenu', (event) => {
 });
 
 window.addEventListener("resize", () => {
-  camOffset.x = clamp(camOffset.x, 0, 2008 - window.innerWidth);
-  camOffset.y = clamp(camOffset.y, 0, 2008 - window.innerHeight);
+  displayCanvas.width = window.innerWidth;
+  displayCanvas.height = window.innerHeight;
+  displayCtx.imageSmoothingEnabled = false;
 });
 
 worldDiv.addEventListener("mousedown", (event) => {
@@ -160,7 +160,7 @@ worldDiv.addEventListener("mousedown", (event) => {
       drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
     }
   }
-  const pos = [Math.floor((event.clientX + camOffset.x) / pixelSize), Math.floor((event.clientY + camOffset.y) / pixelSize)];
+  const pos = [Math.floor((event.clientX + camOffset.x) / tileSize), Math.floor((event.clientY + camOffset.y) / tileSize)];
   console.log("Hue: ", getValue(pos, "hue"), "Connections: ", getValue(pos, "connections"), "Type: ", getValue(pos, "type"), "ID:", getValue(pos, "id"));
 });
 
@@ -510,7 +510,7 @@ function drawTile(pos, override) {
     ctx.beginPath();
 
     ctx.fillStyle = "#808080";
-    ctx.fillRect(pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
+    ctx.fillRect(pos[0] * imageSize, pos[1] * imageSize, imageSize, imageSize);
     ctx.fill();
   }
   else {
@@ -528,9 +528,9 @@ function drawTile(pos, override) {
     }
 
     if (hue === 0 || hue === undefined) {
-      ctx.drawImage(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
+      ctx.drawImage(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], pos[0] * imageSize, pos[1] * imageSize);
     } else {
-      ctx.drawImage(hueShift(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], hue), pos[0] * pixelSize, pos[1] * pixelSize, pixelSize, pixelSize);
+      ctx.drawImage(hueShift(tileImages[`${connections.map(b => b ? 1 : 0).join('')}${filenameType}`], hue), pos[0] * imageSize, pos[1] * imageSize);
     }
   }
 }
@@ -682,7 +682,7 @@ function createSource(pos, hue) {
 }
 
 function drawAt(clientPos, drawingType, shift) {
-  pos = [Math.floor((clientPos[0] + camOffset.x) / pixelSize), Math.floor((clientPos[1] + camOffset.y) / pixelSize)];
+  pos = [Math.floor((clientPos[0] + camOffset.x) / tileSize), Math.floor((clientPos[1] + camOffset.y) / tileSize)];
 
   if (getValue(pos, "type") == "filled" && drawingType == "hole") {
     // update connections
@@ -774,8 +774,8 @@ function drawAt(clientPos, drawingType, shift) {
 function updateMovement(deltaTime) {
   camOffset.x += (+input.right - +input.left) * arrowMovementSpeed * deltaTime;
   camOffset.y += (+input.down - +input.up) * arrowMovementSpeed * deltaTime;
-  camOffset.x = wrap(camOffset.x, 0, canvas.width);
-  camOffset.y = wrap(camOffset.y, 0, canvas.width);
+  camOffset.x = wrap(camOffset.x, 0, width * tileSize);
+  camOffset.y = wrap(camOffset.y, 0, height * tileSize);
 }
 
 let lastTime = 0;
@@ -794,8 +794,8 @@ tileImages[filenames[filenames.length - 1]].onload = () => {
     createSource([Math.round(Math.random() * width), Math.round(Math.random() * height)], hue);
   }
 
-  // for (let x = 0; x < canvas.width; x += pixelSize) {
-  //   for (let y = 0; y < canvas.height; y += pixelSize) {
+  // for (let x = 0; x < canvas.width; x += tileSize) {
+  //   for (let y = 0; y < canvas.height; y += tileSize) {
   //     drawAt([x, y], "hole", false);
   //   }
   // }
@@ -816,19 +816,15 @@ function update(timeStamp) {
       }
     }
 
-    for (const sideCanvas of sideCanvases) {
-      sideCanvas[1].drawImage(canvas, 0, 0);
-    }
     lastUpdate = timeStamp;
   }
 
   // update graphics (outside of 20 tps game loop)
   updateMovement(deltaTime);
 
-  canvas.style.transform = `translate(${-camOffset.x}px, ${-camOffset.y}px)`;
-
-  for (const sideCanvas of sideCanvases) {
-    sideCanvas[0].style.transform = `translate(${-camOffset.x + (sideCanvas[2][0] * canvas.width)}px, ${-camOffset.y + (sideCanvas[2][1] * canvas.width)}px)`;
+  displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+  for (const offset of [[0, 0], [0, 1], [1, 0], [1, 1]]) {
+    displayCtx.drawImage(canvas, offset[0] * width * tileSize - camOffset.x, offset[1] * height * tileSize - camOffset.y, width * tileSize, height * tileSize);
   }
 
   requestAnimationFrame(update);

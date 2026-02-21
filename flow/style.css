@@ -27,6 +27,10 @@ canvas {
   left: 0;
 }
 
+#canvas {
+  left: -1000vw;
+}
+
 #controls button {
   --scale: 1.5;
   width: calc(8vw * var(--scale));
