@@ -1,5 +1,5 @@
 // Variables
-const [width, height] = [100, 100];
+const [width, height] = [200, 200];
 
 const tileSize = 32;
 
@@ -16,8 +16,8 @@ const ctx = canvas.getContext("2d");
 
 canvas.style.backgroundColor = "#808080";
 
-canvas.width = width * 16;
-canvas.height = height * 16;
+canvas.width = width * imageSize;
+canvas.height = height * imageSize;
 
 ctx.imageSmoothingEnabled = false;
 
@@ -147,7 +147,6 @@ window.addEventListener("resize", () => {
 });
 
 worldDiv.addEventListener("mousedown", (event) => {
-  console.log(event)
   if (event.button == 1) {
     mouseStartPos.x = event.clientX;
     mouseStartPos.y = event.clientY;
@@ -188,7 +187,6 @@ worldDiv.addEventListener("mousemove", (event) => {
     mouseStartPos.x = event.clientX;
     mouseStartPos.y = event.clientY;
   } else if (drawing) {
-    console.log(event)
     drawAt([event.clientX, event.clientY], event.buttons == 1 ? "hole" : "fill", event.shiftKey);
   }
 });
@@ -353,17 +351,21 @@ class Source {
     this.pos = pos;
     this.hue = hue;
     this.id = id;
+    this.next = pos;
+    this.previous = pos;
+    this.nextHue = hue;
   }
   produceFlow() {
     let offsetpos;
-    let pos = this.pos;
-    let visited = new Set();
-    let forks = new Queue();
-    let hue = this.hue;
+    let pos = this.next;
+    let hue = this.nextHue;
     let id = [this.id];
+    let next = null;
+    let previous = this.previous;
 
     while (true) {
       const connections = getValue(pos, "connections");
+      next = null;
 
       // check neighbors
       for (const offset of connections2offsets(connections)) {
@@ -371,9 +373,9 @@ class Source {
 
         const offsetHue = getValue(offsetpos, "hue");
         const offsetType = getValue(offsetpos, "type");
-        if (visited.has(`${wrap(offsetpos[0], 0, width)},${wrap(offsetpos[1], 0, height)}`) || offsetType == "filled" || (offsetHue != hue && offsetHue !== undefined) || offsetType == "source") continue;
+        if ((previous[0] == offsetpos[0] && previous[1] == offsetpos[1]) || offsetType == "filled" || (offsetHue != hue && offsetHue !== undefined) || offsetType == "source") continue;
 
-        forks.enqueue(offsetpos);
+        next = offsetpos;
 
         const offsetID = getValue(offsetpos, "id");
         if (offsetID !== undefined) {
@@ -384,6 +386,11 @@ class Source {
           setValue(offsetpos, "hue", hue);
           setValue(offsetpos, "id", id);
           drawTile(offsetpos);
+
+          this.previous = pos;
+          this.next = offsetpos;
+          this.nextHue = hue;
+
           return true;
         }
         else if (offsetType == "combiner") {
@@ -464,21 +471,22 @@ class Source {
             }
           }
         }
+        break;
       }
-      visited.add(`${pos[0]},${pos[1]}`);
 
       // start next iteration
-      if (forks.size == 0) {
+      if (next === null) {
         return false;
       } else {
-        while (visited.has(`${pos[0]},${pos[1]}`)) {
-          if (forks.size == 0) {
-            return false;
-          }
-          pos = forks.dequeue();
-        }
+        previous = pos;
+        pos = next;
       }
     }
+  }
+  refreshNext() {
+    this.next = this.pos;
+    this.previous = this.pos;
+    this.nextHue = this.hue;
   }
 }
 
@@ -709,6 +717,7 @@ function drawAt(clientPos, drawingType, shift) {
             if (offsetID !== undefined) {
               for (const id of offsetID) {
                 updateSources.add(id);
+                sources[id].refreshNext();
               }
             }
           }
@@ -738,6 +747,7 @@ function drawAt(clientPos, drawingType, shift) {
     if (ids !== undefined) {
       for (const id of ids) {
         updateSources.add(id);
+        sources[id].refreshNext();
       }
     }
 
@@ -778,10 +788,46 @@ function updateMovement(deltaTime) {
   camOffset.y = wrap(camOffset.y, 0, height * tileSize);
 }
 
+function testPerformance() {
+  createSource([0, 0], 0);
+
+  for (let x = 0; x < 200; x++) {
+    for (let y = 0; y < 100; y++) {
+      drawAt([x * tileSize, y * tileSize], "hole", false);
+      if (x < 100) {
+        setValue([x, y], "hue", 0);
+        setValue([x, y], "id", [0]);
+        drawTile([x, y]);
+      }
+    }
+    for (let y = 99; y > 0; y--) {
+      drawAt([(x + 1) * tileSize, y * tileSize], "hole", false);
+      if (x < 100) {
+        setValue([x, y], "hue", 0);
+        setValue([x, y], "id", [0]);
+        drawTile([x, y]);
+      }
+    }
+  }
+  const start = performance.now();
+
+  while (updateSources.size > 0) {
+    for (const sourceID of updateSources) {
+      if (sources[sourceID].produceFlow() === false) {
+        updateSources.delete(sourceID);
+      }
+    }
+  }
+
+  return performance.now() - start;
+}
+
 let lastTime = 0;
 let lastUpdate = 0;
 
 tileImages[filenames[filenames.length - 1]].onload = () => {
+  // console.log(testPerformance());
+
   // world gen
   for (let i = 0; i < 100; i++) {
     let hue = 0;
@@ -793,12 +839,6 @@ tileImages[filenames[filenames.length - 1]].onload = () => {
     }
     createSource([Math.round(Math.random() * width), Math.round(Math.random() * height)], hue);
   }
-
-  // for (let x = 0; x < canvas.width; x += tileSize) {
-  //   for (let y = 0; y < canvas.height; y += tileSize) {
-  //     drawAt([x, y], "hole", false);
-  //   }
-  // }
 
   // start simulation
   update(0);
