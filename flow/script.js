@@ -470,7 +470,6 @@ class Source {
         }
         break;
       }
-      console.log("next", next)
 
       // start next iteration
       if (next === null) {
@@ -788,7 +787,7 @@ function testPerformance() {
   createSource([0, 0], 0);
 
   for (let x = 0; x < 200; x++) {
-    for (let y = 0; y < 100; y++) {
+    for (let y = 0; y < 200; y++) {
       drawAt([x * tileSize, y * tileSize], "hole", false);
       if (x < 100) {
         setValue([x, y], "hue", 0);
@@ -815,7 +814,14 @@ function testPerformance() {
     }
   }
 
-  return performance.now() - start;
+  const result = performance.now() - start;
+
+  sources = [];
+  nextSourceID = 0;
+  pixels.clear();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  return result;
 }
 
 let lastTime = 0;
