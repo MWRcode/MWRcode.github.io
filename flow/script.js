@@ -42,8 +42,6 @@ let nextSourceID = 0;
 let camOffset = { x: 0, y: 0 };
 let mouseStartPos = { x: null, y: null };
 
-let resetCombiners = [];
-
 const hueShiftCanvas = document.createElement("canvas");
 const hueShiftCtx = hueShiftCanvas.getContext("2d", { "willReadFrequently": true });
 
@@ -160,7 +158,8 @@ worldDiv.addEventListener("mousedown", (event) => {
     }
   }
   const pos = [Math.floor((event.clientX + camOffset.x) / tileSize), Math.floor((event.clientY + camOffset.y) / tileSize)];
-  console.log("Hue: ", getValue(pos, "hue"), "Connections: ", getValue(pos, "connections"), "Type: ", getValue(pos, "type"), "ID:", getValue(pos, "id"));
+  const id = getValue(pos, "id");
+  console.log("Hue: ", getValue(pos, "hue"), "Connections: ", getValue(pos, "connections"), "Type: ", getValue(pos, "type"), "ID:", id, "Connected Ids:", id !== undefined ? sources[id].connectedIds : id);
 });
 
 document.addEventListener("mouseup", (event) => {
@@ -351,6 +350,7 @@ class Source {
     this.pos = pos;
     this.hue = hue;
     this.id = id;
+    this.connectedIds = new Set([id]);
     this.next = pos;
     this.previous = pos;
     this.nextHue = hue;
@@ -359,7 +359,6 @@ class Source {
     let offsetpos;
     let pos = this.next;
     let hue = this.nextHue;
-    let id = [this.id];
     let next = null;
     let previous = this.previous;
 
@@ -379,12 +378,12 @@ class Source {
 
         const offsetID = getValue(offsetpos, "id");
         if (offsetID !== undefined) {
-          setValue(offsetpos, "id", [...new Set(id.concat(offsetID))]);
+          sources[offsetID].connectedIds.add(this.id);
         }
 
         if (offsetType == "hole" && offsetHue === undefined) {
           setValue(offsetpos, "hue", hue);
-          setValue(offsetpos, "id", id);
+          setValue(offsetpos, "id", this.id);
           drawTile(offsetpos);
 
           this.previous = pos;
@@ -418,7 +417,7 @@ class Source {
                 drawTile(offsetpos, { "state": 3 });
               }
 
-              setValue(offsetpos, "id", id);
+              setValue(offsetpos, "id", this.id);
               return false;
             }
           }
@@ -433,15 +432,14 @@ class Source {
               drawTile(offsetpos, { "state": 3 });
               setValue(offsetpos, "state", 0);
 
-              for (const updateID of offsetID) {
-                updateSources.add(updateID);
-              }
+              updateSources.add(offsetID);
 
-              id = id.concat(offsetID);
-              setValue(offsetpos, "id", id);
+              this.connectedIds.add(offsetID);
+              sources[offsetID].connectedIds.add(this.id);
+
+              setValue(offsetpos, "id", this.id);
 
               hue += 36;
-              resetCombiners.push(offsetpos);
             } else {
               return false;
             }
@@ -457,15 +455,14 @@ class Source {
               drawTile(offsetpos, { "state": 3 });
               setValue(offsetpos, "state", 0);
 
-              for (const updateID of offsetID) {
-                updateSources.add(updateID);
-              }
+              updateSources.add(offsetID);
 
-              id = id.concat(offsetID);
-              setValue(offsetpos, "id", id);
+              this.connectedIds.add(offsetID);
+              sources[offsetID].connectedIds.add(this.id);
+
+              setValue(offsetpos, "id", this.id);
 
               hue += 36;
-              resetCombiners.push(offsetpos);
             } else {
               return false;
             }
@@ -473,6 +470,7 @@ class Source {
         }
         break;
       }
+      console.log("next", next)
 
       // start next iteration
       if (next === null) {
@@ -681,7 +679,7 @@ function createSource(pos, hue) {
 
   setValue(pos, "type", "source");
   setValue(pos, "hue", hue);
-  setValue(pos, "id", [nextSourceID]);
+  setValue(pos, "id", nextSourceID);
   drawTile(pos);
 
   updateSources.add(nextSourceID);
@@ -715,7 +713,7 @@ function drawAt(clientPos, drawingType, shift) {
             const offsetID = getValue(offsetpos, "id");
 
             if (offsetID !== undefined) {
-              for (const id of offsetID) {
+              for (const id of sources[offsetID].connectedIds) {
                 updateSources.add(id);
                 sources[id].refreshNext();
               }
@@ -728,8 +726,6 @@ function drawAt(clientPos, drawingType, shift) {
               setValue(offsetpos, "type", "combiner");
               setValue(offsetpos, "hue", undefined);
               setValue(offsetpos, "id", undefined);
-            } else {
-              setValue(offsetpos, "type", "hole");
             }
           }
           drawTile(offsetpos);
@@ -745,7 +741,7 @@ function drawAt(clientPos, drawingType, shift) {
   else if ((getValue(pos, "type") == "hole" || getValue(pos, "type") == "combiner") && drawingType == "fill") {
     const ids = getValue(pos, "id");
     if (ids !== undefined) {
-      for (const id of ids) {
+      for (const id of sources[ids].connectedIds) {
         updateSources.add(id);
         sources[id].refreshNext();
       }
@@ -764,7 +760,7 @@ function drawAt(clientPos, drawingType, shift) {
 
           const offsetID = getValue(offsetpos, "id");
           if (offsetID !== undefined) {
-            for (const id of offsetID) {
+            for (const id of sources[offsetID].connectedIds) {
               updateSources.add(id);
             }
           }
