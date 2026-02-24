@@ -152,7 +152,7 @@ worldDiv.addEventListener("mousedown", (event) => {
     drawing = true;
     if (useTouch) {
       const parameters = getDrawParameters();
-      drawAt([event.clientX, event.clientY], parameters[0], parameters[1]);
+      drawAt([event.clientX, event.clientY], event.button ? (event.button == 0 ? "hole" : "fill") : parameters[0], parameters[1] || event.shiftKey);
     } else {
       drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
     }
@@ -171,7 +171,7 @@ document.addEventListener("mouseup", (event) => {
   } else if (drawing) {
     if (useTouch) {
       const parameters = getDrawParameters();
-      drawAt([event.clientX, event.clientY], parameters[0], parameters[1]);
+      drawAt([event.clientX, event.clientY], event.button ? (event.button == 0 ? "hole" : "fill") : parameters[0], parameters[1] || event.shiftKey);
     } else {
       drawAt([event.clientX, event.clientY], event.button == 0 ? "hole" : "fill", event.shiftKey);
     }
@@ -186,7 +186,12 @@ worldDiv.addEventListener("mousemove", (event) => {
     mouseStartPos.x = event.clientX;
     mouseStartPos.y = event.clientY;
   } else if (drawing) {
-    drawAt([event.clientX, event.clientY], event.buttons == 1 ? "hole" : "fill", event.shiftKey);
+    if (useTouch) {
+      const parameters = getDrawParameters();
+      drawAt([event.clientX, event.clientY], event.buttons ? (event.buttons == 1 ? "hole" : "fill") : parameters[0], parameters[1] || event.shiftKey);
+    } else {
+      drawAt([event.clientX, event.clientY], event.buttons == 1 ? "hole" : "fill", event.shiftKey);
+    }
   }
 });
 
@@ -831,7 +836,7 @@ tileImages[filenames[filenames.length - 1]].onload = () => {
   // console.log(testPerformance());
 
   // world gen
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 400; i++) {
     let hue = 0;
     while (Math.random() < 0.2) {
       hue += 36;
