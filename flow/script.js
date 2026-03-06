@@ -836,9 +836,9 @@ tileImages[filenames[filenames.length - 1]].onload = () => {
   // console.log(testPerformance());
 
   // world gen
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < width * height / 100; i++) {
     let hue = 0;
-    while (Math.random() < 0.2) {
+    while (Math.random() < 0.25) {
       hue += 36;
       if (hue == 144) {
         hue += 36
@@ -863,7 +863,7 @@ function update(timeStamp) {
       }
     }
 
-    lastUpdate = timeStamp;
+    lastUpdate += 50;
   }
 
   // update graphics (outside of 20 tps game loop)
