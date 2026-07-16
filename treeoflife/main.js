@@ -1,18 +1,15 @@
 import { math } from './code/math.js';
 import { spatialGrid } from './code/spatialGrid.js';
-import { renderManager } from './code/renderManager.js';
+import { renderManager } from './code/gpuRenderManager.js';
 
 const canvas = document.getElementById("mainCanvas");
-const ctx = canvas.getContext("2d");
-
-canvas.style.background = "#222";
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 const grid = new spatialGrid([50, 50]);
 
-const renderer = new renderManager([1000, 1000]);
+const renderer = new renderManager(canvas, 10, 3);
 
 let nodes = new Set();
 
@@ -124,12 +121,12 @@ function createNode(xpos, ypos, pxpos, pypos, color) {
   grid.newClient([xpos, ypos], [minDistance, minDistance]);
   const node = new Node(xpos, ypos, color);
   nodes.add(node);
-  renderer.addNode(xpos, ypos, pxpos, pypos, hslToHex(color[0] * 360, 100, color[1] * 100), 5);
+  renderer.addCircle([xpos, -ypos ], hsl2rgb(color[0] * 360, 100, color[1] * 100), [(pxpos - xpos), -(pypos - ypos)]); // Invert y
 
   circleCount++;
 }
 
-function hslToHex(h, s, l) {
+function hsl2rgb(h, s, l) {
   s /= 100;
   l /= 100;
 
@@ -141,19 +138,20 @@ function hslToHex(h, s, l) {
   const g = f(8);
   const b = f(4);
 
-  const toHex = x => x.toString(16).padStart(2, '0');
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  // const toHex = x => x.toString(16).padStart(2, '0');
+  // return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  return [r, g, b];
 }
 
 function reset() {
   nodes = new Set();
   grid.removeAll();
-  renderer.removeAll();
+  renderer.clearCircles();
 
   circleCount = 0;
   circleCountDisplay.innerText = 1;
 
-  createNode(canvas.width / 2, canvas.height / 2, canvas.width / 2, canvas.height / 2, [Math.random(), math.randrange(0.4, 0.8)]);
+  createNode(0, 0, 0, 0, [Math.random(), math.randrange(0.4, 0.8)]);
   camera = { x: 0, y: 0, zoom: 1 };
   pause();
 }
@@ -265,8 +263,6 @@ class Node {
   }
 }
 
-reset();
-
 function update(deltaTime) {
   for (const node of nodes) {
     node.update(deltaTime);
@@ -283,7 +279,7 @@ function loop(timeStamp) {
   let deltaTime = Math.min(timeStamp - lastTime, 100); // limit deltatime to 100 to avoid lag
   lastTime = timeStamp;
 
-  renderer.render(canvas, ctx, camera);
+  renderer.render(camera);
 
   if (isUpdating) {
     for (let i = 0; i < simSpeed; i++) {
@@ -294,4 +290,7 @@ function loop(timeStamp) {
   requestAnimationFrame(loop);
 }
 
-loop(0);
+setTimeout(() => {
+  reset();
+  loop(0);
+}, 100);
