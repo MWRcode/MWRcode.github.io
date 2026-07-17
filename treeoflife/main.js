@@ -1,15 +1,15 @@
 import { math } from './code/math.js';
-import { spatialGrid } from './code/spatialGrid.js';
-import { renderManager } from './code/gpuRenderManager.js';
+import { SpatialGrid } from './code/spatialGrid.js';
+import { RenderManager } from './code/gpuRenderManager.js';
 
 const canvas = document.getElementById("mainCanvas");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const grid = new spatialGrid([50, 50]);
+const grid = new SpatialGrid(128);
 
-const renderer = new renderManager(canvas, 10, 3);
+const renderer = new RenderManager(canvas, 10, 3);
 
 let nodes = new Set();
 
@@ -30,6 +30,8 @@ let minDistance = 20;
 let maxProduce = 2;
 let spawnRange = [-40, 40, -40, -8];
 let mutation = 0.04;
+
+let minDistanceSqr = minDistance * minDistance;
 
 // Interactions
 document.getElementById("reset").onclick = reset;
@@ -113,15 +115,11 @@ canvas.addEventListener('wheel', (event) => {
 });
 
 // Helper functions
-function veiwTransform(xpos, ypos) {
-  return [(xpos - camera.x - canvas.width / 2) * camera.zoom + canvas.width / 2, (ypos - camera.y - canvas.height / 2) * camera.zoom + canvas.height / 2];
-}
-
 function createNode(xpos, ypos, pxpos, pypos, color) {
-  grid.newClient([xpos, ypos], [minDistance, minDistance]);
+  grid.newCircle([xpos, ypos]);
   const node = new Node(xpos, ypos, color);
   nodes.add(node);
-  renderer.addCircle([xpos, -ypos ], hsl2rgb(color[0] * 360, 100, color[1] * 100), [(pxpos - xpos), -(pypos - ypos)]); // Invert y
+  renderer.addCircle([xpos, -ypos], hsl2rgb(color[0] * 360, 100, color[1] * 100), [(pxpos - xpos), -(pypos - ypos)]); // Invert y
 
   circleCount++;
 }
@@ -203,6 +201,7 @@ document.getElementById("maxProduce").addEventListener("input", event => {
 
 document.getElementById("minDistance").addEventListener("input", event => {
   minDistance = event.target.value;
+  minDistanceSqr = minDistance * minDistance;
   document.getElementById(event.target.id + "Var").innerText = event.target.value;
   event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
 });
@@ -239,8 +238,7 @@ class Node {
       const xpos = this.xpos + math.randrange(spawnRange[0], spawnRange[1]);
       const ypos = this.ypos + math.randrange(spawnRange[2], spawnRange[3]);
 
-      const minDistanceSqr = minDistance * minDistance;
-      const isNearCircle = grid.isNear([xpos, ypos], [minDistance, minDistance], (position) => {
+      const isNearCircle = grid.isNear([xpos, ypos], (position) => {
         return math.getsqrdist(xpos, ypos, position[0], position[1]) < minDistanceSqr;
       });
 

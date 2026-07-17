@@ -1,4 +1,4 @@
-export class renderManager {
+export class RenderManager {
   constructor(canvas, circleRadius, lineThickness) {
     this.canvas = canvas;
     this.circleCount = 0;

@@ -1,4 +1,4 @@
-export const renderManager = class renderManager {
+export class RenderManager {
   constructor(imageSize) {
     this.images = new Map();
     this.imageSize = imageSize;
