@@ -55,7 +55,7 @@ export const spatialGrid = class SpatialHash {
     }
     return clients;
   }
-  isNear(position, bounds, func) {
+  isNear(position, bounds, isNearCallback) {
     const [x, y] = position;
     const [w, h] = bounds;
 

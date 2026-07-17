@@ -33,6 +33,8 @@ export class renderManager {
 
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+
+    if (this.onReady) this.onReady();
   }
   setupCanvas() {
     this.context = this.canvas.getContext("webgpu");

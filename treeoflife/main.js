@@ -104,9 +104,9 @@ canvas.addEventListener('wheel', (event) => {
   const norm = event.deltaY / abs;
 
   if (abs > 50) {
-    camera.zoom *= 1 + event.deltaY * -0.002;
-  } else if (abs > 0) {
-    camera.zoom *= 1 + event.deltaY * -0.02;
+    camera.zoom *= 1 + event.deltaY * 0.002;
+  } else {
+    camera.zoom *= 1 + event.deltaY * 0.02;
   }
 
   camera.zoom = math.clamp(camera.zoom, 0.001, 1000);
@@ -290,7 +290,7 @@ function loop(timeStamp) {
   requestAnimationFrame(loop);
 }
 
-setTimeout(() => {
+renderer.onReady = () => {
   reset();
   loop(0);
-}, 100);
+}
