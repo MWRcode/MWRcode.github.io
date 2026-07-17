@@ -68,7 +68,7 @@ export const spatialGrid = class SpatialHash {
 
         if (k in this._cells) {
           for (let v of this._cells[k]) {
-            if (func(v.position)) {
+            if (isNearCallback(v.position)) {
               return true;
             }
           }
