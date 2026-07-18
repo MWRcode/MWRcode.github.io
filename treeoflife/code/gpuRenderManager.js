@@ -64,11 +64,10 @@ export class RenderManager {
       const oldArrayValues = this.instanceBufferValuesU8;
 
       this.instanceBufferValuesU8 = new Uint8Array(instanceBufferSize);
-      this.instanceBufferValuesF32 = new Float32Array(this.instanceBufferValuesU8.buffer);
 
       this.instanceBufferValuesU8.set(oldArrayValues);
 
-      this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceBufferValuesF32);
+      this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceBufferValuesU8);
     }
 
     const newInstancesU8 = new Uint8Array(instances.length * instanceUnitSize);
@@ -85,7 +84,7 @@ export class RenderManager {
         instances[i][1],
         bufferOffsetF32 + 1); // add 1 to skip over 4 bytes of color
     }
-    this.instanceBufferValuesU8.set(newInstancesU8, previousCircleCount * instanceUnitSize)
+    this.instanceBufferValuesU8.set(newInstancesU8, previousCircleCount * instanceUnitSize);
     this.device.queue.writeBuffer(this.instanceBuffer, previousCircleCount * instanceUnitSize, newInstancesF32);
   }
   createShadersPipeline() {
@@ -177,9 +176,8 @@ export class RenderManager {
     });
 
     this.instanceBufferValuesU8 = new Uint8Array(instanceBufferSize);
-    this.instanceBufferValuesF32 = new Float32Array(this.instanceBufferValuesU8.buffer);
 
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceBufferValuesF32);
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceBufferValuesU8);
   }
   setupUniforms() {
     const viewTransformBufferSize = 4 * 3 // vec3f
@@ -283,13 +281,16 @@ export class RenderManager {
 
     // Lines
     let pass = encoder.beginRenderPass(this.renderPassDescriptor);
+
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.linesVertexBuffer);
     pass.setVertexBuffer(1, this.instanceBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint32');
 
-    pass.drawIndexed(6, this.circleCount);
+    if (viewTransform.zoom > 0.05) { // hide lines if zoomed out far
+      pass.drawIndexed(6, this.circleCount);
+    }
 
     // Circles
     pass.setVertexBuffer(0, this.circlesVertexBuffer);

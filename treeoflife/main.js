@@ -7,7 +7,7 @@ const canvas = document.getElementById("mainCanvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const grid = new SpatialGrid(128);
+const grid = new SpatialGrid(64);
 
 const renderer = new RenderManager(canvas, 10, 3);
 
@@ -37,7 +37,7 @@ let minDistanceSqr = minDistance * minDistance;
 document.getElementById("reset").onclick = reset;
 document.getElementById("backward").onclick = reset;
 document.getElementById("play").onclick = play;
-document.getElementById("forward").onclick = () => { update(1000) };
+document.getElementById("forward").onclick = () => { update(1000); circleCountDisplay.innerText = circleCount.toLocaleString('en-US'); };
 
 window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
@@ -188,32 +188,32 @@ function setupSliders() {
 setupSliders();
 
 document.getElementById("simSpeed").addEventListener("input", event => {
-  simSpeed = event.target.value;
+  simSpeed = parseFloat(event.target.value);
   document.getElementById(event.target.id + "Var").innerText = event.target.value;
   event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
 });
 
 document.getElementById("maxProduce").addEventListener("input", event => {
-  maxProduce = event.target.value;
+  maxProduce = parseFloat(event.target.value);
   document.getElementById(event.target.id + "Var").innerText = event.target.value;
   event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
 });
 
 document.getElementById("minDistance").addEventListener("input", event => {
-  minDistance = event.target.value;
+  minDistance = parseFloat(event.target.value);
   minDistanceSqr = minDistance * minDistance;
   document.getElementById(event.target.id + "Var").innerText = event.target.value;
   event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
 });
 
 document.getElementById("maxAge").addEventListener("input", event => {
-  maxAge = event.target.value;
+  maxAge = parseFloat(event.target.value);
   document.getElementById(event.target.id + "Var").innerText = event.target.value;
   event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
 });
 
 document.getElementById("mutation").addEventListener("input", event => {
-  mutation = event.target.value;
+  mutation = parseFloat(event.target.value);
   document.getElementById(event.target.id + "Var").innerText = event.target.value;
   event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
 });
@@ -238,7 +238,7 @@ class Node {
       const xpos = this.xpos + math.randrange(spawnRange[0], spawnRange[1]);
       const ypos = this.ypos + math.randrange(spawnRange[2], spawnRange[3]);
 
-      const isNearCircle = grid.isNear([xpos, ypos], (position) => {
+      const isNearCircle = grid.isNear([xpos, ypos], minDistance, (position) => {
         return math.getsqrdist(xpos, ypos, position[0], position[1]) < minDistanceSqr;
       });
 
@@ -258,18 +258,16 @@ class Node {
     if (this.age >= maxAge && maxAge != 0) {
       this.dead = true;
     }
+    return this.dead;
   }
 }
 
 function update(deltaTime) {
   for (const node of nodes) {
-    node.update(deltaTime);
-    if (node.dead) {
+    if (node.update(deltaTime)) {
       nodes.delete(node);
     }
   }
-
-  circleCountDisplay.innerText = circleCount.toLocaleString('en-US');
 }
 
 let lastTime = 0;
@@ -283,6 +281,8 @@ function loop(timeStamp) {
     for (let i = 0; i < simSpeed; i++) {
       update(deltaTime);
     }
+
+    circleCountDisplay.innerText = circleCount.toLocaleString('en-US');
   }
 
   requestAnimationFrame(loop);
