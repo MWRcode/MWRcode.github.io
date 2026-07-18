@@ -49,7 +49,7 @@ export class RenderManager {
     return Math.ceil(this.circleCount / stepSize) * stepSize;
   }
   addToInstanceBuffer(instances, previousCircleCount) {
-    const instanceUnitSize = 4 + 8 + 8; // unorm8x4, vec2f, vec2f
+    const instanceUnitSize = 4 + 8 + 4; // unorm8x4, vec2f, vec2i
     const instanceBufferSize = instanceUnitSize * this.getInstanceBufferCount();
 
     if (this.instanceBuffer && (instanceBufferSize > this.instanceBuffer.size)) {
@@ -71,18 +71,16 @@ export class RenderManager {
     }
 
     const newInstancesU8 = new Uint8Array(instances.length * instanceUnitSize);
+    const newInstancesI16 = new Int16Array(newInstancesU8.buffer);
     const newInstancesF32 = new Float32Array(newInstancesU8.buffer);
     for (let i = 0; i < instances.length; i++) {
       const bufferOffsetU8 = i * instanceUnitSize;
-      const bufferOffsetF32 = bufferOffsetU8 / 4;
 
-      newInstancesU8.set( // set the color
-        instances[i][0],
-        bufferOffsetU8);
+      newInstancesU8.set(instances[i][0], bufferOffsetU8);
+      
+      newInstancesF32.set(instances[i][1], (bufferOffsetU8 + 4) / 4); // add 4 to skip over 4 bytes of color
 
-      newInstancesF32.set( // set the offset and lineDirection
-        instances[i][1],
-        bufferOffsetF32 + 1); // add 1 to skip over 4 bytes of color
+      newInstancesI16.set(instances[i][2], (bufferOffsetU8 + 12) / 2); // add 8 to skip over 4 + 8 bytes
     }
     this.instanceBufferValuesU8.set(newInstancesU8, previousCircleCount * instanceUnitSize);
     this.device.queue.writeBuffer(this.instanceBuffer, previousCircleCount * instanceUnitSize, newInstancesF32);
@@ -94,7 +92,7 @@ export class RenderManager {
           @location(0) position: vec2f,
           @location(1) color: vec4f,
           @location(2) offset: vec2f,
-          @location(3) lineDirection: vec2f,
+          @location(3) lineDirection: vec2i,
         };
 
         struct VSOutput {
@@ -105,20 +103,21 @@ export class RenderManager {
 
         @group(0) @binding(0) var<uniform> viewTransform: vec3f;
         @group(0) @binding(1) var<uniform> resolution: vec2f;
+        @group(0) @binding(2) var<uniform> circleSize: f32;
 
         @vertex fn vs( vert: Vertex ) -> VSOutput {
-          const circleSize = ${this.circleSize};
-
           var vsOut: VSOutput;
 
           var position = vert.position;
-          if (abs(vert.position.x) == circleSize) {
+          if (abs(vert.position.x) == 1.0) { // Is circle
             vsOut.color = vert.color;
-            vsOut.uvCord = (vert.position / circleSize + vec2f(1.0)) / 2;
+            vsOut.uvCord = (vert.position + vec2f(1.0)) / 2;
+            position = position * circleSize;
           } else {
             vsOut.color = vec4f(0.3125, 0.3125, 0.3125, 0.0);
 
-            position = normalize(vert.lineDirection.yx) * vec2f(1.0, -1.0) * vert.position.x + vert.lineDirection * vert.position.y;
+            position = normalize(vec2f(f32(vert.lineDirection.y), f32(-vert.lineDirection.x)));
+            position = position * vert.position.x + vec2f(vert.lineDirection) * vert.position.y;
           }
 
           vsOut.position = vec4f(((position + vert.offset) * viewTransform.z + viewTransform.xy * viewTransform.z) / resolution, 0.0, 1.0);
@@ -127,7 +126,7 @@ export class RenderManager {
         }
 
         @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
-          if (distance(vec2f(0.5, 0.5), vsOut.uvCord) > 0.5 && vsOut.color.a > 0.0) {
+          if (distance(vec2f(0.5), vsOut.uvCord) > 0.5 && vsOut.color.a > 0.0) {
             discard;
           }
 
@@ -149,12 +148,12 @@ export class RenderManager {
             ],
           },
           {
-            arrayStride: 4 + 2 * 4 + 2 * 4,
+            arrayStride: 4 + 2 * 4 + 2 * 2,
             stepMode: 'instance',
             attributes: [
               { shaderLocation: 1, offset: 0, format: 'unorm8x4' },   // color
               { shaderLocation: 2, offset: 4, format: 'float32x2' },  // offset
-              { shaderLocation: 3, offset: 12, format: 'float32x2' }, // lineDirection
+              { shaderLocation: 3, offset: 12, format: 'sint16x2' },  // lineDirection
             ],
           },
         ],
@@ -166,7 +165,7 @@ export class RenderManager {
     });
   }
   setupInstanceBuffers() {
-    const instanceUnitSize = 4 + 8 + 8; // unorm8x4, vec2f, vec2f
+    const instanceUnitSize = 4 + 8 + 4; // unorm8x4, vec2f, vec2i
     const instanceBufferSize = instanceUnitSize * this.getInstanceBufferCount();
 
     this.instanceBuffer = this.device.createBuffer({
@@ -180,17 +179,24 @@ export class RenderManager {
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceBufferValuesU8);
   }
   setupUniforms() {
-    const viewTransformBufferSize = 4 * 3 // vec3f
+    const viewTransformBufferSize = 4 * 3; // vec3f
     this.viewTransformBuffer = this.device.createBuffer({
       label: "viewTransform uniform buffer",
       size: viewTransformBufferSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    const resolutionBufferSize = 4 * 2 // vec2f
+    const resolutionBufferSize = 4 * 2; // vec2f
     this.resolutionBuffer = this.device.createBuffer({
       label: "resolution uniform buffer",
       size: resolutionBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    const circleSizeBufferSize = 4; // f32
+    this.circleSizeBuffer = this.device.createBuffer({
+      label: "circleSize uniform buffer",
+      size: circleSizeBufferSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -200,6 +206,7 @@ export class RenderManager {
       entries: [
         { binding: 0, resource: this.viewTransformBuffer },
         { binding: 1, resource: this.resolutionBuffer },
+        { binding: 2, resource: this.circleSizeBuffer },
       ],
     });
   }
@@ -212,8 +219,8 @@ export class RenderManager {
       linesVertexData[offset++] = cornorOffset[0] * this.lineThickness;
       linesVertexData[offset++] = (cornorOffset[1] + 1.0) / 2;
 
-      circlesVertexData[offset - 2] = cornorOffset[0] * this.circleSize;
-      circlesVertexData[offset - 1] = cornorOffset[1] * this.circleSize;
+      circlesVertexData[offset - 2] = cornorOffset[0];
+      circlesVertexData[offset - 1] = cornorOffset[1];
     }
 
     const indexData = new Uint32Array([0, 1, 2, 2, 1, 3]);
@@ -273,6 +280,8 @@ export class RenderManager {
 
     this.device.queue.writeBuffer(this.resolutionBuffer, 0, new Float32Array([this.canvas.width, this.canvas.height]));
 
+    this.device.queue.writeBuffer(this.circleSizeBuffer, 0, new Float32Array([this.circleSize]));
+
     // Set render pass decriptor
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
 
@@ -309,7 +318,7 @@ export class RenderManager {
     this.addToInstanceBuffer(circles, previousCircleCount);
   }
   addCircle(pos, color, lineDirection) {
-    this.circleQueue.push([color.concat(255), [pos[0] * 2, pos[1] * 2, lineDirection[0] * 2, lineDirection[1] * 2]]);
+    this.circleQueue.push([color.concat(255), [pos[0] * 2, pos[1] * 2], [lineDirection[0] * 2, lineDirection[1] * 2]]);
   }
   clearCircles() {
     this.circleCount = 0;
