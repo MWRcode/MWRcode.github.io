@@ -1,11 +1,14 @@
 body {
   height: 100vh;
   width: 100vw;
-  position: absolute;
   margin: 0;
   background-color: #111;
   overscroll-behavior: none;
   overflow-x: hidden;
+}
+
+:root{
+  touch-action: none;
 }
 
 body::-webkit-scrollbar {
@@ -13,7 +16,7 @@ body::-webkit-scrollbar {
 }
 
 canvas {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
 }

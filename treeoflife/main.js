@@ -20,6 +20,7 @@ const circleCountDisplay = document.getElementById("pointsVar");
 let camera = { x: 0, y: 0, zoom: 1 };
 
 let mouseStartPos = { x: null, y: null };
+let previousZoomDistance = null;
 
 let isUpdating = false;
 
@@ -60,31 +61,40 @@ window.addEventListener("mousemove", (event) => {
 
 window.addEventListener("mouseup", (event) => {
   if (mouseStartPos.x != null) {
-    camera.x += (mouseStartPos.x - event.clientX) * (1 / camera.zoom);
-    camera.y += (mouseStartPos.y - event.clientY) * (1 / camera.zoom);
     mouseStartPos.x = null;
     mouseStartPos.y = null;
   }
 });
 
 canvas.addEventListener("touchstart", (event) => {
-  mouseStartPos.x = event.changedTouches[0].clientX;
-  mouseStartPos.y = event.changedTouches[0].clientY;
+  mouseStartPos.x = event.touches[0].clientX;
+  mouseStartPos.y = event.touches[0].clientY;
 });
 
 window.addEventListener("touchmove", (event) => {
   if (mouseStartPos.x != null) {
-    camera.x += (mouseStartPos.x - event.changedTouches[0].clientX) * (1 / camera.zoom);
-    camera.y += (mouseStartPos.y - event.changedTouches[0].clientY) * (1 / camera.zoom);
-    mouseStartPos.x = event.changedTouches[0].clientX;
-    mouseStartPos.y = event.changedTouches[0].clientY;
+    if (event.touches.length == 1) {
+      camera.x += (mouseStartPos.x - event.touches[0].clientX) * (1 / camera.zoom);
+      camera.y += (mouseStartPos.y - event.touches[0].clientY) * (1 / camera.zoom);
+      mouseStartPos.x = event.touches[0].clientX;
+      mouseStartPos.y = event.touches[0].clientY;
+    } else {
+      const dist = math.getdist(event.touches[0].clientX, event.touches[0].clientY, event.touches[1].clientX, event.touches[1].clientY);
+      if (previousZoomDistance != null) {
+        camera.zoom *= 1 + (dist - previousZoomDistance) * 0.015;
+
+        camera.zoom = math.clamp(camera.zoom, 0.001, 1000);
+      }
+      previousZoomDistance = dist;
+    }
   }
 });
 
 window.addEventListener("touchend", (event) => {
+  if (previousZoomDistance != null) {
+    previousZoomDistance = null;
+  }
   if (mouseStartPos.x != null) {
-    camera.x += (mouseStartPos.x - event.changedTouches[0].clientX) * (1 / camera.zoom);
-    camera.y += (mouseStartPos.y - event.changedTouches[0].clientY) * (1 / camera.zoom);
     mouseStartPos.x = null;
     mouseStartPos.y = null;
   }
@@ -92,8 +102,6 @@ window.addEventListener("touchend", (event) => {
 
 window.addEventListener('mouseleave', (event) => {
   if (mouseStartPos.x != null) {
-    camera.x += (mouseStartPos.x - event.clientX) * (1 / camera.zoom);
-    camera.y += (mouseStartPos.y - event.clientY) * (1 / camera.zoom);
     mouseStartPos.x = null;
     mouseStartPos.y = null;
   }
@@ -103,7 +111,6 @@ canvas.addEventListener('wheel', (event) => {
   event.preventDefault();
 
   const abs = Math.abs(event.deltaY);
-  const norm = event.deltaY / abs;
 
   if (abs > 50) {
     camera.zoom *= 1 + event.deltaY * 0.002;
@@ -245,7 +252,7 @@ class Node {
       if (!isNearCircle) {
         const color = [
           math.wrap(this.color[0] + math.randrange(-mutation / 2, mutation / 2), 0, 1),
-          math.pingpong(this.color[1] + math.randrange(-mutation / 2, mutation / 2), 0, 1)
+          math.pingpong(this.color[1] + math.randrange(-mutation / 2, mutation / 2))
         ];
         createNode(xpos, ypos, this.xpos, this.ypos, color);
         this.produced++;

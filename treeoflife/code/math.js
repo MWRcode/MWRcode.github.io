@@ -17,10 +17,9 @@ export const math = {
         const range = max - min;
         return ((((n - min) % range) + range) % range) + min;
     },
-    pingpong: function (n, min, max) {
-        const range = max - min;
-        const t = n % (2 * range);
-        return t < range ? min + t : max - (t - range);
+    pingpong: function (n) {
+        const t = (n + 1e4) % 2;
+        return t < 1 ? t : 2 - t;
     },
     clamp: function (x, a, b) {
         return Math.min(Math.max(x, a), b);
