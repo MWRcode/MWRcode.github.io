@@ -9,11 +9,13 @@ canvas.height = window.innerHeight;
 
 const grid = new SpatialGrid(64);
 
-const renderer = new RenderManager(canvas, 10, 3);
+const renderer = new RenderManager(canvas);
 
 let nodes = new Set();
 
 let circleCount = 0;
+
+let circleRadius = 12;
 
 const circleCountDisplay = document.getElementById("pointsVar");
 
@@ -185,10 +187,11 @@ function setupSliders() {
     "minDistance",
     "maxAge",
     "mutation",
+    "circleRadius",
   ];
   sliderVars.forEach((sliderVar) => {
     const element = document.getElementById(sliderVar);
-    document.getElementById(sliderVar + "Var").innerText = element.value;
+    document.getElementById(sliderVar + "Var").innerText = sliderVar == "mutation" ? (element.value * 100).toFixed(1) + "%" : element.value;
     element.style.setProperty('--value', math.map(element.value, element.min, element.max) * 100 + "%");
   });
 }
@@ -221,6 +224,12 @@ document.getElementById("maxAge").addEventListener("input", event => {
 
 document.getElementById("mutation").addEventListener("input", event => {
   mutation = parseFloat(event.target.value);
+  document.getElementById(event.target.id + "Var").innerText = (event.target.value * 100).toFixed(1) + "%";
+  event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
+});
+
+document.getElementById("circleRadius").addEventListener("input", event => {
+  circleRadius = parseFloat(event.target.value);
   document.getElementById(event.target.id + "Var").innerText = event.target.value;
   event.target.style.setProperty('--value', math.map(event.target.value, event.target.min, event.target.max) * 100 + "%");
 });
@@ -252,7 +261,7 @@ class Node {
       if (!isNearCircle) {
         const color = [
           math.wrap(this.color[0] + math.randrange(-mutation / 2, mutation / 2), 0, 1),
-          math.pingpong(this.color[1] + math.randrange(-mutation / 2, mutation / 2))
+          math.clamp(this.color[1], mutation / 2, 1 - mutation / 2) + math.randrange(-mutation / 2, mutation / 2)
         ];
         createNode(xpos, ypos, this.xpos, this.ypos, color);
         this.produced++;
@@ -282,7 +291,7 @@ function loop(timeStamp) {
   let deltaTime = Math.min(timeStamp - lastTime, 100); // limit deltatime to 100 to avoid lag
   lastTime = timeStamp;
 
-  renderer.render(camera);
+  renderer.render(camera, circleRadius);
 
   if (isUpdating) {
     for (let i = 0; i < simSpeed; i++) {

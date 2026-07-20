@@ -1,11 +1,8 @@
 export class RenderManager {
-  constructor(canvas, circleRadius, lineThickness) {
+  constructor(canvas) {
     this.canvas = canvas;
     this.circleCount = 0;
     this.circleQueue = [];
-
-    this.circleSize = circleRadius;
-    this.lineThickness = lineThickness;
 
     this.instanceBufferObjectCount = 2 ** 20;
     this.instanceBuffers = [];
@@ -67,7 +64,7 @@ export class RenderManager {
 
         @group(0) @binding(0) var<uniform> viewTransform: vec3f;
         @group(0) @binding(1) var<uniform> resolution: vec2f;
-        @group(0) @binding(2) var<uniform> circleSize: f32;
+        @group(0) @binding(2) var<uniform> circleRadius: f32;
 
         @vertex fn vs( vert: Vertex ) -> VSOutput {
           var vsOut: VSOutput;
@@ -76,12 +73,12 @@ export class RenderManager {
           if (abs(vert.position.x) == 1.0) { // Is circle
             vsOut.color = vert.color;
             vsOut.uvCord = (vert.position + vec2f(1.0)) / 2;
-            position = position * circleSize;
-          } else {
+            position = position * circleRadius;
+          } else { // Is line
             vsOut.color = vec4f(0.3125, 0.3125, 0.3125, 0.5);
 
             position = normalize(vec2f(f32(vert.lineDirection.y), f32(-vert.lineDirection.x)));
-            position = position * vert.position.x + vec2f(vert.lineDirection) * vert.position.y;
+            position = position * vert.position.x * circleRadius / 2 + vec2f(vert.lineDirection) * vert.position.y; // Line thickness is 1/4 circleRadius
           }
 
           vsOut.position = vec4f(((position + vert.offset) * viewTransform.z + viewTransform.xy * viewTransform.z) / resolution, 0.0, 1.0);
@@ -180,7 +177,7 @@ export class RenderManager {
 
     let offset = 0;
     for (const cornorOffset of [[-1, 1], [-1, -1], [1, 1], [1, -1]]) {
-      linesVertexData[offset++] = cornorOffset[0] * this.lineThickness;
+      linesVertexData[offset++] = cornorOffset[0] / 2;
       linesVertexData[offset++] = (cornorOffset[1] + 1.0) / 2;
 
       circlesVertexData[offset - 2] = cornorOffset[0];
@@ -232,13 +229,13 @@ export class RenderManager {
       ],
     };
   }
-  render(viewTransform) {
+  render(viewTransform, circleRadius) {
     // Setup Uniforms
     this.device.queue.writeBuffer(this.viewTransformBuffer, 0, new Float32Array([-viewTransform.x * window.innerWidth / this.canvas.width * 2, viewTransform.y * window.innerHeight / this.canvas.height * 2, viewTransform.zoom]));
 
     this.device.queue.writeBuffer(this.resolutionBuffer, 0, new Float32Array([this.canvas.width, this.canvas.height]));
 
-    this.device.queue.writeBuffer(this.circleSizeBuffer, 0, new Float32Array([this.circleSize]));
+    this.device.queue.writeBuffer(this.circleSizeBuffer, 0, new Float32Array([circleRadius]));
 
     // Set render pass decriptor
     this.renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
