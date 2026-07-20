@@ -7,6 +7,11 @@ export class RenderManager {
     this.circleSize = circleRadius;
     this.lineThickness = lineThickness;
 
+    this.instanceBufferObjectCount = 2 ** 20;
+    this.instanceBuffers = [];
+    this.instanceValues = [];
+    this.instanceBufferOffset = 0;
+
     navigator.gpu?.requestAdapter()
       .then((adapter) => {
         this.adapter = adapter;
@@ -25,7 +30,7 @@ export class RenderManager {
     this.setupCanvas();
 
     this.createShadersPipeline();
-    this.setupInstanceBuffers();
+    this.createInstanceBuffers();
     this.setupUniforms();
     this.setupInstaceMech();
 
@@ -43,47 +48,6 @@ export class RenderManager {
       device: this.device,
       format: this.presentationFormat,
     });
-  }
-  getInstanceBufferCount() {
-    const stepSize = 16384;
-    return Math.ceil(this.circleCount / stepSize) * stepSize;
-  }
-  addToInstanceBuffer(instances, previousCircleCount) {
-    const instanceUnitSize = 4 + 8 + 4; // unorm8x4, vec2f, vec2i
-    const instanceBufferSize = instanceUnitSize * this.getInstanceBufferCount();
-
-    if (this.instanceBuffer && (instanceBufferSize > this.instanceBuffer.size)) {
-      this.instanceBuffer.destroy();
-
-      this.instanceBuffer = this.device.createBuffer({
-        label: "instance attributes buffer",
-        size: instanceBufferSize,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      });
-
-      const oldArrayValues = this.instanceBufferValuesU8;
-
-      this.instanceBufferValuesU8 = new Uint8Array(instanceBufferSize);
-
-      this.instanceBufferValuesU8.set(oldArrayValues);
-
-      this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceBufferValuesU8);
-    }
-
-    const newInstancesU8 = new Uint8Array(instances.length * instanceUnitSize);
-    const newInstancesI16 = new Int16Array(newInstancesU8.buffer);
-    const newInstancesF32 = new Float32Array(newInstancesU8.buffer);
-    for (let i = 0; i < instances.length; i++) {
-      const bufferOffsetU8 = i * instanceUnitSize;
-
-      newInstancesU8.set(instances[i][0], bufferOffsetU8);
-      
-      newInstancesF32.set(instances[i][1], (bufferOffsetU8 + 4) / 4); // add 4 to skip over 4 bytes of color
-
-      newInstancesI16.set(instances[i][2], (bufferOffsetU8 + 12) / 2); // add 8 to skip over 4 + 8 bytes
-    }
-    this.instanceBufferValuesU8.set(newInstancesU8, previousCircleCount * instanceUnitSize);
-    this.device.queue.writeBuffer(this.instanceBuffer, previousCircleCount * instanceUnitSize, newInstancesF32);
   }
   createShadersPipeline() {
     this.module = this.device.createShaderModule({
@@ -114,7 +78,7 @@ export class RenderManager {
             vsOut.uvCord = (vert.position + vec2f(1.0)) / 2;
             position = position * circleSize;
           } else {
-            vsOut.color = vec4f(0.3125, 0.3125, 0.3125, 0.0);
+            vsOut.color = vec4f(0.3125, 0.3125, 0.3125, 0.5);
 
             position = normalize(vec2f(f32(vert.lineDirection.y), f32(-vert.lineDirection.x)));
             position = position * vert.position.x + vec2f(vert.lineDirection) * vert.position.y;
@@ -126,7 +90,7 @@ export class RenderManager {
         }
 
         @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
-          if (distance(vec2f(0.5), vsOut.uvCord) > 0.5 && vsOut.color.a > 0.0) {
+          if ((distance(vec2f(0.5), vsOut.uvCord) > 0.5 && vsOut.color.a > 0.5) || vsOut.color.a == 0.0) {
             discard;
           }
 
@@ -164,19 +128,19 @@ export class RenderManager {
       },
     });
   }
-  setupInstanceBuffers() {
+  createInstanceBuffers() {
     const instanceUnitSize = 4 + 8 + 4; // unorm8x4, vec2f, vec2i
-    const instanceBufferSize = instanceUnitSize * this.getInstanceBufferCount();
+    const instanceBufferSize = instanceUnitSize * this.instanceBufferObjectCount;
 
-    this.instanceBuffer = this.device.createBuffer({
-      label: "instance attributes buffer",
+    this.instanceBuffers.push(this.device.createBuffer({
+      label: `instance attributes buffer #${this.instanceBuffers.length}`,
       size: instanceBufferSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
+    }));
 
-    this.instanceBufferValuesU8 = new Uint8Array(instanceBufferSize);
+    const instanceBufferValuesU8 = new Uint8Array(instanceBufferSize);
 
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceBufferValuesU8);
+    this.instanceValues.push(instanceBufferValuesU8);
   }
   setupUniforms() {
     const viewTransformBufferSize = 4 * 3; // vec3f
@@ -269,12 +233,6 @@ export class RenderManager {
     };
   }
   render(viewTransform) {
-    // Add queued circles
-    if (this.circleQueue.length > 0) {
-      this.addCircles(this.circleQueue);
-      this.circleQueue = [];
-    }
-
     // Setup Uniforms
     this.device.queue.writeBuffer(this.viewTransformBuffer, 0, new Float32Array([-viewTransform.x * window.innerWidth / this.canvas.width * 2, viewTransform.y * window.innerHeight / this.canvas.height * 2, viewTransform.zoom]));
 
@@ -288,23 +246,27 @@ export class RenderManager {
     // Queue commands
     const encoder = this.device.createCommandEncoder();
 
-    // Lines
     let pass = encoder.beginRenderPass(this.renderPassDescriptor);
 
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.linesVertexBuffer);
-    pass.setVertexBuffer(1, this.instanceBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint32');
 
     if (viewTransform.zoom > 0.05) { // hide lines if zoomed out far
-      pass.drawIndexed(6, this.circleCount);
+      for (let i = 0; i < this.instanceBuffers.length; i++) {
+        pass.setVertexBuffer(1, this.instanceBuffers[i]);
+        pass.setVertexBuffer(0, this.linesVertexBuffer);
+
+        pass.drawIndexed(6, (i == this.instanceBuffers.length - 1) ? this.instanceBufferOffset : this.instanceBufferObjectCount);
+      }
     }
 
-    // Circles
-    pass.setVertexBuffer(0, this.circlesVertexBuffer);
+    for (let i = 0; i < this.instanceBuffers.length; i++) {
+      pass.setVertexBuffer(1, this.instanceBuffers[i]);
+      pass.setVertexBuffer(0, this.circlesVertexBuffer);
 
-    pass.drawIndexed(6, this.circleCount);
+      pass.drawIndexed(6, (i == this.instanceBuffers.length - 1) ? this.instanceBufferOffset : this.instanceBufferObjectCount);
+    }
 
     pass.end();
 
@@ -312,17 +274,35 @@ export class RenderManager {
 
     this.device.queue.submit([commandBuffer]);
   }
-  addCircles(circles) {
-    const previousCircleCount = this.circleCount;
-    this.circleCount += circles.length;
-    this.addToInstanceBuffer(circles, previousCircleCount);
-  }
   addCircle(pos, color, lineDirection) {
-    this.circleQueue.push([color.concat(255), [pos[0] * 2, pos[1] * 2], [lineDirection[0] * 2, lineDirection[1] * 2]]);
+    const instanceUnitSize = 4 + 8 + 4; // unorm8x4, vec2f, vec2i
+
+    if (this.instanceBufferOffset >= this.instanceBufferObjectCount - 1) {
+      this.createInstanceBuffers();
+      this.instanceBufferOffset = 0;
+    }
+
+    const newInstancesU8 = new Uint8Array(instanceUnitSize);
+    const newInstancesI16 = new Int16Array(newInstancesU8.buffer);
+    const newInstancesF32 = new Float32Array(newInstancesU8.buffer);
+
+    newInstancesU8.set(color.concat(255), 0);
+    newInstancesF32.set([pos[0] * 2, pos[1] * 2], 1); // skip 4 bytes of color
+    newInstancesI16.set([lineDirection[0] * 2, lineDirection[1] * 2], 6); // skip 4 + 8 bytes
+
+    this.instanceValues[this.instanceValues.length - 1].set(newInstancesU8, this.instanceBufferOffset * instanceUnitSize);
+    this.device.queue.writeBuffer(this.instanceBuffers[this.instanceBuffers.length - 1], this.instanceBufferOffset * instanceUnitSize, newInstancesU8);
+
+    this.circleCount++;
+    this.instanceBufferOffset++;
   }
   clearCircles() {
     this.circleCount = 0;
     this.circleQueue = [];
-    this.setupInstanceBuffers();
+
+    this.instanceBuffers = [];
+    this.instanceValues = [];
+    this.createInstanceBuffers();
+    this.instanceBufferOffset = 0;
   }
 }
