@@ -115,7 +115,7 @@ canvas.addEventListener('wheel', (event) => {
   const abs = Math.abs(event.deltaY);
 
   if (abs > 50) {
-    camera.zoom *= 1 + event.deltaY * 0.002;
+    camera.zoom *= 1 + event.deltaY * -0.002;
   } else {
     camera.zoom *= 1 + event.deltaY * 0.02;
   }
