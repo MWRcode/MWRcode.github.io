@@ -274,7 +274,7 @@ export class RenderManager {
   addCircle(pos, color, lineDirection) {
     const instanceUnitSize = 4 + 8 + 4; // unorm8x4, vec2f, vec2i
 
-    if (this.instanceBufferOffset >= this.instanceBufferObjectCount - 1) {
+    if (this.instanceBufferOffset >= this.instanceBufferObjectCount) {
       this.createInstanceBuffers();
       this.instanceBufferOffset = 0;
     }
