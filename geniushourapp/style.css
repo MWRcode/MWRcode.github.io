@@ -1,0 +1,21 @@
+body {
+    background-color: #112233;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+    align-items: start;
+}
+
+.grid div {
+    height: 200px;
+    width: 1fr;
+    background-color: #ffdd88;
+    border-style: solid;
+    border-color: black;
+    border-width: 2px;
+    border-radius: 10px;
+    text-align: center;
+}
