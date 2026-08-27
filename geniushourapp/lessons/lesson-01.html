@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css" rel="stylesheet">
+    <meta name="author" content="Michael W Reeves">
+    <title>Lesson 1: Output</title>
+</head>
+
+<body>
+    <script src="https://cdn.jsdelivr.net/pyodide/v314.0.6/full/pyodide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/python/python.min.js"></script>
+    <script type="module" src="../code.js"></script>
+    <div id="topBar">
+        <a href="../index.html">
+            <button id="homeButton"></button>
+        </a>
+    </div>
+    <h1>Output</h1>
+    <div class="lesson">
+        <p>
+            Let's start off simple with simple line of Python:
+        </p>
+        <div class="codeBlock">
+            <textarea class="code">print("Hello World")</textarea>
+        </div>
+        <p>
+            You may not understand what all of it does yet, but you will.
+            This program outputs the phrase, “Hello World” to the console.
+        </p>
+        <p>
+            The "print" keyword specifies a function.
+            The parentheses specify the parameters to the function.
+            The quotation marks specify a text input.
+            And the input is: Hello World.
+            Anything written in the quotation marks will be outputted when the program runs.
+        </p>
+        <p>
+            Try writing your own message!
+        </p>
+        <div class="codeEditor">
+            <textarea id="codeInput"></textarea>
+            <textarea id="codeOutput"></textarea>
+            <div id="runCode">Run</div>
+        </div>
+        <a href="lesson-02.html">
+            <button>Next Lesson</button>
+        </a>
+    </div>
+</body>
+
+</html>
