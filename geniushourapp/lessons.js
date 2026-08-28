@@ -1,4 +1,4 @@
-import { setTitle, setEditor, newParagraph, newList, newTable, newCodeBlock, setupPython } from "../code.js";
+import { setTitle, setEditor, newParagraph, newList, newTable, newCodeBlock, setupPython } from "code.js";
 
 const params = new URLSearchParams(window.location.search);
 const lessonNumber = params.get("lesson");
