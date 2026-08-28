@@ -3,52 +3,6 @@ body {
     margin: 0;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    align-items: start;
-    position: relative;
-    top: 200px;
-    margin: 10px;
-}
-
-.grid div {
-    height: 200px;
-    width: 1fr;
-    background-color: #eee;
-    border-radius: 10px;
-    box-shadow: 0 0 3px #ccc;
-    cursor: pointer;
-    transition: box-shadow 0.2s ease;
-}
-
-.grid div:hover {
-    box-shadow: 0 0 8px #bbb;
-    transition: box-shadow 0.2s ease;
-}
-
-.grid div img {
-    background-size: cover;
-    background-repeat: no-repeat;
-    width: 100%;
-    aspect-ratio: 5/2;
-    border-radius: 10px;
-}
-
-.grid a {
-    text-decoration: none;
-}
-
-.grid div p {
-    margin: 0;
-    margin-left: 8px;
-    margin-right: 8px;
-    font-size: 18px;
-    font-family: Arial, Helvetica, sans-serif;
-    color: black;
-}
-
 #topBar {
     position: sticky;
     top: 0;
@@ -69,6 +23,61 @@ body {
     background-size: cover;
     background-repeat: no-repeat;
     cursor: pointer;
+}
+
+#titleImage {
+    display: block;
+    width: 50%;
+    margin: auto;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: start;
+    position: relative;
+    top: 50px;
+    margin: 10px;
+    margin-bottom: 200px;
+}
+
+.grid .lessonCell {
+    height: 200px;
+    width: 1fr;
+    background-color: #eee;
+    border-radius: 10px;
+    box-shadow: 0 0 3px #ccc;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+}
+
+.grid .lessonCell:hover {
+    box-shadow: 0 0 8px #bbb;
+    transition: box-shadow 0.2s ease;
+}
+
+.grid .title {
+    width: calc(100% - 8px);
+    padding: 4px;
+    background-color: #f8f8f8;
+    color: black;
+    border-radius: 10px;
+    font-size: 200%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    text-align: center;
+}
+
+.grid a {
+    text-decoration: none;
+}
+
+.grid .lessonCell p {
+    margin: 8px;
+    font-size: 18px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: black;
 }
 
 h1 {
@@ -93,7 +102,40 @@ h1 {
     width: 100%;
 }
 
-.lesson button {
+.lesson li {
+    font-size: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: black;
+    width: 100%;
+}
+
+.lesson th, td {
+    font-size: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: black;
+    border-style: solid;
+    border-width: 2px;
+    padding: 4px;
+}
+.lesson table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.lesson #previousLesson {
+    border-style: none;
+    border-radius: 10px;
+    background-color: rgb(46, 91, 238);
+    font-size: 24px;
+    padding: 4px;
+    padding-left: 10px;
+    padding-right: 10px;
+    position: absolute;
+    left: 0;
+    cursor: pointer;
+}
+
+.lesson #nextLesson {
     border-style: none;
     border-radius: 10px;
     background-color: rgb(46, 91, 238);
@@ -104,10 +146,6 @@ h1 {
     position: absolute;
     right: 0;
     cursor: pointer;
-}
-
-.codeBlock pre {
-    font-size: 20px;
 }
 
 .codeBlock {
