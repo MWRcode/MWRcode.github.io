@@ -9,7 +9,7 @@ if (lessonNumber == 1) {
     newParagraph(`Let's start off simple with simple line of Python:`);
     newCodeBlock(`print("Hello World")`);
     newParagraph(`You may not understand what all of it does yet, but you will. This program outputs the phrase, "Hello World" to the console.`);
-    newParagraph(`The "print" keyword specifies a function. The parentheses specify the parameters to the function. The quotation marks specify a text input. And the input is: Hello World. Anything written in the quotation marks will be outputted when the program runs.`)
+    newParagraph(`The "print" keyword specifies a function. The parentheses specify the parameters to the function. The quotation marks specify a text input. And the input is: "Hello World". Anything written in the quotation marks will be outputted when the program runs.`)
     newParagraph(`Try writing your own message!`);
 } else if (lessonNumber == 2) {
     setTitle("Types", 2);
@@ -27,7 +27,7 @@ if (lessonNumber == 1) {
 } else if (lessonNumber == 3) {
     setTitle("Variables", 3);
 
-    newParagraph(`When assigning variables you need a name and data. Variables are assigned using the equals sign. For example, this program sets a variable named “a” to the value of 85.`);
+    newParagraph(`When assigning variables you need a name and data. Variables are assigned using the equals sign. For example, this program sets a variable named "a" to the value of 85.`);
     newCodeBlock(`a = 10`);
     newParagraph(`Variables can be assigned any type. For example:`);
     newCodeBlock(`b = "This is a string."`);
@@ -39,7 +39,7 @@ if (lessonNumber == 1) {
 } else if (lessonNumber == 4) {
     setTitle("Operators", 4);
 
-    newParagraph(`Operators are simple, built-in mathematical operations that can be used on numbers. For example, this expression sets “a” to 4 + 9:`);
+    newParagraph(`Operators are simple, built-in mathematical operations that can be used on numbers. For example, this expression sets "a" to 4 + 9:`);
     newCodeBlock(`a = 4 + 9`);
     newParagraph(`The built-in operators include:`);
 
@@ -92,8 +92,8 @@ if (lessonNumber == 1) {
 
     newParagraph(`Single booleans are not that useful, so we combine them with boolean logic. Booleans can be combined with certain boolean logic expressions. For example:`);
     newCodeBlock(`a = 4 > 0\nb = 1 < 9\nc = a and b\nprint(c)`);
-    newParagraph(`This program prints true if “a” and “b” are both true.`);
-    newParagraph(`The “and” operation is an example of a built-in boolean operation. The built-in boolean operations include:`);
+    newParagraph(`This program prints true if "a" and "b" are both true.`);
+    newParagraph(`The "and" operation is an example of a built-in boolean operation. The built-in boolean operations include:`);
 
     newTable(["Name", "Program Name", "Operation"], [
         ["And", "and", "Returns true if both inputs are true."],
@@ -106,35 +106,91 @@ if (lessonNumber == 1) {
     newCodeBlock(`a = False\nprint(not a)`);
     newParagraph(`Try writting your own boolean logic expressions!`);
 } else if (lessonNumber == 7) {
-    setTitle("", 7);
+    setTitle("Conditionals", 7);
 
-    newParagraph(``);
-    newCodeBlock(``);
+    newParagraph(`A conditional statement uses booleans to control the flow of a program.`);
+    newParagraph(`The built-in conditional statements are:`);
+
+    newTable(["Name", "Program name", "Action"], [
+        ["If", "if", "Executes the contained code if the boolean input is true."],
+        ["Else", "else", "Executes the contained code if the previous conditional statement was false."],
+        ["Else if", "elif", "Executes the contained code if the previous conditional statement was false and the boolean input is true."]
+    ]);
+
+    newParagraph(`*It is important to note that a "else" or "elif" can only come after an "if"`);
+    newParagraph(`For example this program prints "Hi" if "a" is 1, "Bye" if "a" is 2, and "Goodbye" if "a" is neither 1 nor 2:`);
+    newCodeBlock(`if a == 1:\n    print("Hi")\nelif a == 2:\n    print("Bye")\nelse:\n    print("Goodbye")`);
+    newParagraph(`It is important to note that a conditional statement must end with a colon and have indentation* on the code that is inside of it.`);
+    newParagraph(`*This indentation can be either the tab character or a number of spaces that is consistent across the whole program.`);
+    newParagraph(`Try writting your own conditonal statements!`);
 } else if (lessonNumber == 8) {
-    setTitle("", 8);
+    setTitle("Functions", 8);
 
-    newParagraph(``);
-    newCodeBlock(``);
+    newParagraph(`Functions are blocks of code that have an input, process it, and output new data. Function can be both called and defined.`);
+    newParagraph(`When a function is called it uses parentheses to specify inputs. For example we have used the built-in "print" function to output data.`);
+    newParagraph(`Functions can also be created in a program. In Python, functions are created with the "def" keyword, which is short for define. A Python function would look like this:`);
+    newCodeBlock(`def add(a, b):\n    return a + b\n\nprint(add(1, 4))`);
+    newParagraph(`This function prints 5.`);
+    newParagraph(`The parentheses in the definition contain the names of the variables that the inputs will be assigned to. This means that when the function is called a variable, "a", is created and set to the value of the first input. And a variable, "b", is set to the value of the second input. In this case "a" is 1 and "b" is 4.`);
+    newParagraph(`The "return" keyword is used to return the value that the function computed.`);
+    newParagraph(`*It is important to know that functions use the same indentation logic as conditionals to contain their code.`);
+    newParagraph(`Functions can be used to easily execute the same code many times, which makes them very useful.`);
+    newParagraph(`Try writing your own function!`);
 } else if (lessonNumber == 9) {
-    setTitle("", 9);
+    setTitle("Lists", 9);
 
-    newParagraph(``);
-    newCodeBlock(``);
+    newParagraph(`You already learned the basics of list but they have a few extra operations because they can uniquely hold multiple data points. The way you access list data is through indexing. List indexing is done with brackets and looks like this:`);
+    newCodeBlock(`a = [3, 9, 4, 7]\nprint(a[0])`);
+    newParagraph(`This program prints the first item of the list "a".`);
+    newParagraph(`Indexing can also be used to modify data. For example, this sets the second item in the list to 47.`);
+    newCodeBlock(`a = [1, 2, 3, 4]\na[1] = 47`);
+    newParagraph(`*It is important to note that in Python list indexing starts at 0 for the first item.`);
+    newParagraph(`Lists also have built-in functions that can be called on them. The most important of these functions are:`);
+
+    newTable(["Name", "Method", "Operation"], [
+        ["Append", "list.append(x)", "Adds the input to the end of the list."],
+        ["Remove", "list.remove(x)", "Removes the first occurrence of the input in the list."],
+        ["Index", "list.index(x)", "Returns the index of the first time that the input appears in the list."],
+        ["Length", "len(list)", "Returns the number of items in the input."]
+    ]);
+
+    newParagraph(`The reason some of these functions begin with "list" and then call the function on the list is because they are list-only operations. These functions are built into the "list" type and can only be called on a list. The "len" function however is a global built-in function and works with many types, such as strings and lists.`);
+    newParagraph(`Try running and modifying the program below and see how these functions work.`);
 } else if (lessonNumber == 10) {
-    setTitle("", 10);
+    setTitle("Strings", 10);
 
-    newParagraph(``);
-    newCodeBlock(``);
+    newParagraph(`Like lists, strings have some custom behavior that is used to manipulate the data inside them. The most common operation done on strings is combining them. This is done simply with the "+" operator, like this:`);
+    newCodeBlock(`a = "Hello"\nprint(a + " World!")`);
+    newParagraph(`This program prints "Hello World!"`);
+    newParagraph(`Strings can also be indexed the same way as lists, however strings can not be assigned values through indexing.`);
+    newParagraph(`For example this prints "d":`);
+    newCodeBlock(`letters = "abcdefghijk"\nprint(letters[3])`);
+    newParagraph(`But this program throws an error:`);
+    newCodeBlock(`letters = "abcdefghijk"\nletters[3] = "u"`);
+    newParagraph(`Additionally indexing can also include ranges instead of single values. For example this prints "bcd":`);
+    newCodeBlock(`letters = "abcdefghijk"\nprint(letters[1:4])`);
+    newParagraph(`*Ranged indexing works for lists too.`);
+    newParagraph(`*The "len" function also works on strings and returns the number of characters.`);
+    newParagraph(`Try editing your own strings!`);
 } else if (lessonNumber == 11) {
-    setTitle("", 11);
+    setTitle("For loops", 11);
 
-    newParagraph(``);
-    newCodeBlock(``);
+    newParagraph(`In Python, for loops are used to perform a task multiple times or loop through the items of a list. For example, a for loop that repeats 20 times looks like this:`);
+    newCodeBlock(`for i in range(20):\n    print(i)`);
+    newParagraph(`This loop prints the numbers 0 through 19.`);
+    newParagraph(`For loops can also be used to loop through the items of a list. For example, this program adds one to every number in a list:`);
+    newCodeBlock(`numbers = [8, 2, 5, 6, 3]\nnew_numbers = []\n\nfor number in numbers:\n    new_numbers.append(number + 1)\n\nprint(new_numbers)`);
+    newParagraph(`Try writing your own for loops!`);
 } else if (lessonNumber == 12) {
-    setTitle("", 12);
+    setTitle("Input", 12);
 
-    newParagraph(``);
-    newCodeBlock(``);
+    newParagraph(`The last piece of the input/processing/output system needed is input. Input from the user in Python is done through the input function.`);
+    newParagraph(`That function looks like this:`);
+    newCodeBlock(`i = input("What is your name?")`);
+    newParagraph(`The variable "i" will be set to whatever the user inputs as response to the question.`);
+    newParagraph(`The user can input their response to the question through the terminal.`);
+    newParagraph(`While it seems simple, this function unlocks communication with the user while the program is running!`);
+    newParagraph(`Try writing your own program with the input function that uses conditionals to make a custom response based on what the user says.`);
 }
 
 setupPython();
