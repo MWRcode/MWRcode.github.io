@@ -3,6 +3,10 @@ body {
     margin: 0;
 }
 
+:root {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
 #topBar {
     position: sticky;
     top: 0;
@@ -64,7 +68,6 @@ body {
     color: black;
     border-radius: 10px;
     font-size: 200%;
-    font-family: Arial, Helvetica, sans-serif;
     font-weight: bold;
     text-align: center;
 }
@@ -76,12 +79,10 @@ body {
 .grid .lessonCell p {
     margin: 8px;
     font-size: 18px;
-    font-family: Arial, Helvetica, sans-serif;
     color: black;
 }
 
 h1 {
-    font-family: Arial, Helvetica, sans-serif;
     text-align: center;
     margin-top: 80px;
 }
@@ -97,21 +98,18 @@ h1 {
 
 .lesson p {
     font-size: 20px;
-    font-family: Arial, Helvetica, sans-serif;
     color: black;
     width: 100%;
 }
 
 .lesson li {
     font-size: 20px;
-    font-family: Arial, Helvetica, sans-serif;
     color: black;
     width: 100%;
 }
 
 .lesson th, td {
     font-size: 20px;
-    font-family: Arial, Helvetica, sans-serif;
     color: black;
     border-style: solid;
     border-width: 2px;
@@ -120,6 +118,37 @@ h1 {
 .lesson table {
     width: 100%;
     border-collapse: collapse;
+}
+
+.lesson #task {
+    width: 100%;
+    background-color: #ffffaa;
+    border-style: solid;
+    border-width: 2px;
+    border-color: #dddd88;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.lesson #task h2 {
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+    margin: 6px;
+}
+
+.lesson #task #taskContent {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 6px;
+}
+
+.lesson #task #taskStatus {
+    font-size: 20px;
+    margin: 6px;
+    position: absolute;
+    right: 0;
 }
 
 .lesson #previousLesson {
@@ -152,13 +181,13 @@ h1 {
     width: 100%;
 }
 
-.codeEditor {
+#codeEditor {
     position: relative;
     margin-bottom: 50px;
     width: 100%;
 }
 
-.codeEditor #codeOutput {
+#codeEditor #codeOutput {
     margin: auto;
     margin-top: 10px;
     height: 200px;
@@ -166,7 +195,7 @@ h1 {
     background-color: #f7f7f7;
 }
 
-.codeEditor #runCode {
+#codeEditor #runCode {
     position: absolute;
     top: 2px;
     right: 2px;

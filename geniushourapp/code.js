@@ -1,15 +1,16 @@
-// Python editor
+// Initillize Python
 let pyodide;
 async function setup() {
     pyodide = await loadPyodide();
-
-    pyodide.setStdout({ batched: (str) => insert(str) });
 }
 setup();
 
+// Run Python
 function insert(text = "") {
-    var lastLine = terminal.lastLine();
-    var lineContent = terminal.getLine(lastLine);
+    programTerminalOutput.push(text);
+
+    const lastLine = terminal.lastLine();
+    const lineContent = terminal.getLine(lastLine);
 
     terminal.replaceRange(
         `>>> ${text}\n`,
@@ -35,8 +36,8 @@ function disableConsoleTyping(i, change) {
     }
 }
 
-async function pythonInput(question = "") {
-    insert(`${question}`);
+async function pythonInput(question) {
+    if (question) insert(`${question}`);
     insert();
 
     userInputLine = terminal.lastLine() - 1;
@@ -60,20 +61,31 @@ async function pythonInput(question = "") {
     return text;
 }
 
-const input = document.getElementById("codeInput");
-const output = document.getElementById("codeOutput");
+let verifyTask;
+let programTerminalOutput = [];
 
-let editor, terminal;
-
-// Run Python
 document.getElementById("runCode").addEventListener("click", async () => {
+    programTerminalOutput = [];
+
     const pythonCode = editor.getValue().replace("input(", "await input(");
 
     const globalNamespace = pyodide.globals.get("dict")();
     globalNamespace.set("input", pythonInput);
 
+    pyodide.setStdout({ batched: (str) => insert(str) });
+
+    let finalExpression;
+
     try {
-        await pyodide.runPythonAsync(pythonCode, { globals: globalNamespace });
+        finalExpression = await pyodide.runPythonAsync(pythonCode, { globals: globalNamespace });
+
+        if (verifyTask) {
+            let variables = globalNamespace.toJs();
+            delete variables["__builtins__"];
+            delete variables["input"];
+
+            if (verifyTask(variables, programTerminalOutput, finalExpression ? finalExpression.toJs() : undefined)) completeTask();
+        }
     } catch (e) {
         const lines = e.message.split("\n");
         insert(lines[lines.length - 2]);
@@ -82,8 +94,21 @@ document.getElementById("runCode").addEventListener("click", async () => {
     terminal.scrollTo(0, Infinity);
 });
 
-// Python setup
-// Light Themes: yeti, xq-light, ttcn, solarized light, paraiso-light, neo, neat, mdn-like, juejin, idea, elegant, eclipse, duotone-light, base16-light, 3024-day, default
+// Python editor setup
+const input = document.getElementById("codeInput");
+const output = document.getElementById("codeOutput");
+
+let editor, terminal;
+
+function completeTask() {
+    const taskElement = document.getElementById("task");
+
+    taskElement.style.background = "#aaffaa";
+    taskElement.style.borderColor = "#88dd88";
+
+    document.getElementById("taskStatus").innerText = "Complete";
+}
+
 export function setupPython() {
     editor = CodeMirror.fromTextArea(input, {
         lineNumbers: true,
@@ -112,6 +137,7 @@ export function setupPython() {
 
 // Create lessons
 const lesson = document.getElementsByClassName("lesson")[0];
+const insertBeforeElement = document.getElementById("task");
 
 export function setTitle(text, number) {
     document.title = `Lesson ${number}: ${text}`;
@@ -131,14 +157,59 @@ export function setTitle(text, number) {
     });
 }
 
-export function setEditor(text) {
-    document.getElementById("codeInput").innerText = text;
+export function setTask(text, callback) {
+    document.getElementById("taskContent").innerText = text;
+
+    verifyTask = callback;
+}
+
+export function runProgram({ vars, inputs }) {
+    let newProgram = "";
+    if (vars) {
+        for (let line of editor.getValue().split("\n")) {
+            for (const variable of Object.entries(vars)) {
+                if (line.slice(0, variable[0].length) == variable[0] && (line[variable[0].length] === " " || line[variable[0].length] === "=")) {
+                    line = `${variable[0]} = ${JSON.stringify(variable[1])}`;
+                }
+            }
+            newProgram = newProgram + line + "\n";
+        }
+    } else {
+        newProgram = editor.getValue();
+    }
+
+    const globalNamespace = pyodide.globals.get("dict")();
+
+    let terminalOut = [];
+    pyodide.setStdout({ batched: (str) => terminalOut.push(str) });
+
+    pyodide.setStdin({ stdin: () => null }); // Throw error if input function used
+
+    let inputIndex = 0;
+    if (inputs) globalNamespace.set("input", () => {
+        const i = inputIndex;
+        if (inputIndex + 1 >= inputs.length) {
+            inputIndex = 0;
+        } else {
+            inputIndex++;
+        }
+
+        return `${inputs[i]}`;
+    });
+
+    pyodide.runPython(newProgram, { globals: globalNamespace });
+
+    let variables = globalNamespace.toJs();
+    delete variables["__builtins__"];
+    if (inputs) delete variables["input"];
+
+    return { variables, terminalOut };
 }
 
 export function newParagraph(text) {
     const p = document.createElement("p");
     p.innerText = text;
-    lesson.insertBefore(p, document.getElementsByClassName("codeEditor")[0]);
+    lesson.insertBefore(p, insertBeforeElement);
 }
 
 export function newList(items, type = "bullet") {
@@ -148,7 +219,7 @@ export function newList(items, type = "bullet") {
         li.innerText = text;
         list.appendChild(li);
     }
-    lesson.insertBefore(list, document.getElementsByClassName("codeEditor")[0]);
+    lesson.insertBefore(list, insertBeforeElement);
 }
 
 export function newTable(headers, rows) {
@@ -173,11 +244,11 @@ export function newTable(headers, rows) {
         table.appendChild(rowElement);
     }
 
-    lesson.insertBefore(table, document.getElementsByClassName("codeEditor")[0]);
+    lesson.insertBefore(table, insertBeforeElement);
 }
 
 export function newCodeBlock(text) {
     const template = document.createElement('template');
     template.innerHTML = `<div class="codeBlock"><textarea class="code">${text}</textarea></div>`;
-    lesson.insertBefore(template.content.firstElementChild, document.getElementsByClassName("codeEditor")[0]);
+    lesson.insertBefore(template.content.firstElementChild, insertBeforeElement);
 }
